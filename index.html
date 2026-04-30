@@ -55,9 +55,8 @@ body{
 .italic{font-family:var(--italic);font-style:italic;font-weight:400}
 .mono{font-family:var(--mono);letter-spacing:0;font-size:.85em}
 
-/* Background — paper-grain dotted texture */
-.bg-tex{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:radial-gradient(rgba(212,160,92,.05) 1px,transparent 1px);background-size:24px 24px;mask-image:radial-gradient(ellipse 80% 60% at 50% 30%,#000 30%,transparent 90%);-webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 30%,#000 30%,transparent 90%)}
-.bg-glow{position:fixed;width:80vw;height:50vw;max-width:900px;max-height:600px;border-radius:50%;background:radial-gradient(ellipse,var(--accent) 0%,transparent 60%);filter:blur(140px);opacity:.08;top:-15%;left:50%;transform:translateX(-50%);z-index:0;pointer-events:none}
+/* Background — single restrained glow, no dot texture */
+.bg-glow{position:fixed;width:90vw;height:60vw;max-width:1100px;max-height:700px;border-radius:50%;background:radial-gradient(ellipse,var(--accent) 0%,transparent 65%);filter:blur(160px);opacity:.05;top:-25%;left:50%;transform:translateX(-50%);z-index:0;pointer-events:none}
 
 /* Top bar */
 .bar{position:sticky;top:0;height:60px;z-index:50;display:flex;align-items:center;background:rgba(13,12,10,.82);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--line);font-family:var(--mono);font-size:.72rem}
@@ -79,8 +78,7 @@ body{
 .hero{margin-bottom:5rem;max-width:880px}
 .hero .kicker{font-family:var(--mono);font-size:.68rem;color:var(--accent);letter-spacing:.28em;text-transform:uppercase;margin-bottom:1.75rem;display:flex;align-items:center;gap:.7rem;font-weight:500}
 .hero .kicker::before{content:'';width:28px;height:1px;background:var(--accent)}
-.hero h1{font-family:var(--display);font-weight:400;font-size:clamp(2.8rem,7.5vw,5.5rem);line-height:1.05;color:var(--text);margin-bottom:1.5rem;letter-spacing:-.025em}
-.hero h1 em{font-family:var(--italic);font-style:italic;color:var(--accent);font-weight:400;letter-spacing:0}
+.hero h1{font-family:var(--display);font-weight:400;font-size:clamp(2.4rem,6vw,4.5rem);line-height:1.05;color:var(--text);margin-bottom:1.5rem;letter-spacing:-.025em}
 .hero .lede{font-size:1.05rem;line-height:1.7;color:var(--text-2);max-width:62ch;font-weight:400}
 .hero .lede strong{color:var(--text);font-weight:500}
 
@@ -94,11 +92,11 @@ body{
 .stat .sub{font-family:var(--font);font-size:.78rem;color:var(--text-3);margin-top:.55rem;font-weight:400}
 
 /* Section divider */
-.sect{display:flex;align-items:baseline;margin:5rem 0 2rem;gap:1.25rem}
-.sect .sect-num{font-family:var(--mono);font-size:.7rem;color:var(--accent);letter-spacing:.2em;font-weight:500}
-.sect .sect-name{font-family:var(--display);font-size:1.45rem;color:var(--text);font-weight:500;letter-spacing:-.01em;line-height:1}
-.sect .sect-line{flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent);margin-top:.4rem}
-.sect .sect-meta{font-family:var(--mono);font-size:.66rem;color:var(--text-3);letter-spacing:.18em;text-transform:uppercase}
+.sect{display:flex;align-items:center;margin:4.5rem 0 1.75rem;gap:1rem}
+.sect .sect-name{font-family:var(--font);font-size:.72rem;color:var(--text-2);letter-spacing:.22em;text-transform:uppercase;font-weight:600;line-height:1}
+.sect .sect-line{flex:1;height:1px;background:var(--line)}
+.sect .sect-meta{font-family:var(--mono);font-size:.66rem;color:var(--text-3);letter-spacing:.04em}
+.sect .sect-num{display:none}
 
 /* Grid */
 .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:1rem}
@@ -108,13 +106,11 @@ body{
   border-radius:var(--rad);
   padding:1.75rem;
   position:relative;
-  transition:all .3s var(--ease);
+  transition:border-color .25s var(--ease),background .25s var(--ease);
   display:flex;
   flex-direction:column;
 }
-.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0;transition:opacity .3s}
 .card:hover{border-color:var(--line-2);background:var(--surface-2)}
-.card:hover::before{opacity:.5}
 .card.col-6{grid-column:span 6}
 .card.col-7{grid-column:span 7}
 .card.col-5{grid-column:span 5}
@@ -123,9 +119,7 @@ body{
 .card.col-12{grid-column:span 12}
 
 .card-head{display:flex;align-items:flex-start;gap:1rem;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid var(--line)}
-.card-num{font-family:var(--mono);font-size:.7rem;color:var(--accent);letter-spacing:.15em;font-weight:500;flex-shrink:0;padding-top:.15rem;width:2.2rem}
-.card-num::before{content:'[ '}
-.card-num::after{content:' ]'}
+.card-num{font-family:var(--mono);font-size:.78rem;color:var(--accent);letter-spacing:.04em;font-weight:500;flex-shrink:0;padding-top:.2rem;width:1.85rem}
 .card-title{flex:1;min-width:0}
 .card-title .t{font-family:var(--display);font-size:1.2rem;color:var(--text);font-weight:500;line-height:1.2;margin-bottom:.3rem;letter-spacing:-.015em}
 .card-title .sub{font-family:var(--font);font-size:.78rem;color:var(--text-3);letter-spacing:0;font-weight:400;line-height:1.3}
@@ -200,21 +194,21 @@ body{
 .out-row .val .small{color:var(--text-3);font-size:.78em;margin-left:.4rem}
 
 button.btn{
-  background:transparent;
+  background:var(--surface-2);
   border:1px solid var(--line);
   color:var(--text-2);
-  font-family:var(--mono);
-  font-size:.72rem;
-  padding:.55rem 1rem;
-  border-radius:3px;
+  font-family:var(--font);
+  font-size:.78rem;
+  padding:.55rem 1.1rem;
+  border-radius:5px;
   cursor:pointer;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-  transition:all .2s;
+  letter-spacing:0;
+  font-weight:500;
+  transition:all .15s var(--ease);
 }
-button.btn:hover{border-color:var(--accent);color:var(--accent)}
-button.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--bg)}
-button.btn.primary:hover{background:var(--accent-2);border-color:var(--accent-2);color:var(--bg)}
+button.btn:hover{border-color:var(--line-2);color:var(--text);background:var(--bg-2)}
+button.btn.primary{background:var(--accent);border-color:var(--accent);color:#1a1206}
+button.btn.primary:hover{background:var(--accent-2);border-color:var(--accent-2);color:#1a1206}
 
 /* Resistor */
 .resistor{display:flex;justify-content:center;align-items:center;height:90px;margin:.5rem 0 1.25rem;position:relative}
@@ -266,7 +260,7 @@ button.btn.primary:hover{background:var(--accent-2);border-color:var(--accent-2)
 .news-item{display:flex;gap:1.1rem;padding:1rem 0;border-bottom:1px solid var(--line);align-items:flex-start;transition:padding-left .2s}
 .news-item:last-child{border-bottom:none}
 .news-item:hover{padding-left:.4rem}
-.news-item .rank{font-family:var(--italic);font-style:italic;color:var(--accent-deep);font-size:1.5rem;flex-shrink:0;width:2.2rem;text-align:right;line-height:1;padding-top:.15rem}
+.news-item .rank{font-family:var(--mono);color:var(--text-3);font-size:.8rem;flex-shrink:0;width:1.8rem;text-align:right;line-height:1.4;padding-top:.2rem;letter-spacing:.04em;font-weight:500;font-feature-settings:"tnum"}
 .news-item .body{flex:1;min-width:0}
 .news-item .title{display:block;color:var(--text);font-size:1rem;line-height:1.35;margin-bottom:.35rem;text-decoration:none;font-weight:500}
 .news-item .title:hover{color:var(--accent)}
@@ -331,7 +325,6 @@ footer .sig em{font-family:var(--italic);font-style:italic;color:var(--accent);f
 </style>
 </head>
 <body>
-<div class="bg-tex"></div>
 <div class="bg-glow"></div>
 
 <header class="bar">
@@ -352,14 +345,14 @@ footer .sig em{font-family:var(--italic);font-style:italic;color:var(--accent);f
 <main class="wrap">
 
   <section class="hero">
-    <div class="kicker">workshop &middot; abhedh.in</div>
-    <h1>A maker's <em>bench</em>,<br/>in the browser.</h1>
-    <p class="lede">Calculators for LED power, steppers and resistors. References for NeoPixel byte order and the ESP32 family pinout. A live news feed and a quick-launcher for the devices in front of you. <strong>One static page. No backend. Runs offline.</strong></p>
+    <div class="kicker">abhedh.in / workshop</div>
+    <h1>Bench instruments.</h1>
+    <p class="lede">Calculators, references and a launcher for ESP32 / NeoPixel / stepper builds. A Hacker News feed for the slow afternoons. <strong>One static page, no backend, runs offline.</strong></p>
 
     <div class="stats">
       <div class="stat">
         <div class="lbl">Instruments</div>
-        <div class="val"><em>07</em></div>
+        <div class="val">07</div>
         <div class="sub">tools live in this page</div>
       </div>
       <div class="stat">
@@ -380,12 +373,10 @@ footer .sig em{font-family:var(--italic);font-style:italic;color:var(--accent);f
     </div>
   </section>
 
-  <!-- ───── Featured instruments ───── -->
   <div class="sect">
-    <span class="sect-num">— I —</span>
     <span class="sect-name">Instruments</span>
     <span class="sect-line"></span>
-    <span class="sect-meta">04 Tools</span>
+    <span class="sect-meta">04</span>
   </div>
 
   <div class="grid">
@@ -483,12 +474,10 @@ footer .sig em{font-family:var(--italic);font-style:italic;color:var(--accent);f
 
   </div>
 
-  <!-- ───── Reference & feeds ───── -->
   <div class="sect">
-    <span class="sect-num">— II —</span>
     <span class="sect-name">Reference &amp; feeds</span>
     <span class="sect-line"></span>
-    <span class="sect-meta">03 Panels</span>
+    <span class="sect-meta">03</span>
   </div>
 
   <div class="grid">
@@ -826,7 +815,7 @@ function renderNews(items){
     let host='news.ycombinator.com';
     if(it.url){try{host=new URL(it.url).hostname.replace(/^www\./,'')}catch{}}
     return `<div class="news-item">
-      <div class="rank">${i+1}</div>
+      <div class="rank">${(i+1).toString().padStart(2,'0')}</div>
       <div class="body">
         <a class="title" href="${escHtml(url)}" target="_blank" rel="noopener">${escHtml(it.title||'(untitled)')}</a>
         <div class="nmeta">
