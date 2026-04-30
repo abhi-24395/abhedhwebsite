@@ -82,6 +82,33 @@ body{
 .hero .lede{font-size:1.05rem;line-height:1.7;color:var(--text-2);max-width:62ch;font-weight:400}
 .hero .lede strong{color:var(--text);font-weight:500}
 
+/* Live NeoPixel strip in hero */
+.strip-wrap{margin:2rem 0 2.5rem;max-width:680px}
+.strip-canvas{
+  width:100%;
+  height:38px;
+  display:block;
+  background:#070503;
+  border:1px solid var(--line);
+  border-radius:6px;
+  cursor:pointer;
+  transition:border-color .2s;
+}
+.strip-canvas:hover{border-color:var(--line-2)}
+.strip-cap{
+  margin-top:.7rem;
+  font-family:var(--mono);
+  font-size:.7rem;
+  color:var(--text-3);
+  letter-spacing:.05em;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.strip-cap .name{color:var(--accent);font-weight:500;text-transform:lowercase}
+.strip-cap .live{display:inline-flex;align-items:center;gap:.45rem}
+.strip-cap .live::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--success);box-shadow:0 0 5px var(--success);animation:p 2.5s ease-in-out infinite}
+
 /* Stats strip */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0;margin-top:3rem;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .stat{padding:1.5rem var(--gut);border-right:1px solid var(--line)}
@@ -347,6 +374,15 @@ footer .sig em{font-family:var(--italic);font-style:italic;color:var(--accent);f
   <section class="hero">
     <div class="kicker">abhedh.in / workshop</div>
     <h1>Bench instruments.</h1>
+
+    <div class="strip-wrap">
+      <canvas class="strip-canvas" id="ledstrip"></canvas>
+      <div class="strip-cap">
+        <span class="live">live · click strip to cycle</span>
+        <span class="name" id="strip-name">rainbow</span>
+      </div>
+    </div>
+
     <p class="lede">Calculators, references and a launcher for ESP32 / NeoPixel / stepper builds. A Hacker News feed for the slow afternoons. <strong>One static page, no backend, runs offline.</strong></p>
 
     <div class="stats">
@@ -579,6 +615,89 @@ footer .sig em{font-family:var(--italic);font-style:italic;color:var(--accent);f
 <script>
 function tick(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}
 tick();setInterval(tick,30000);
+
+// Live NeoPixel strip in hero
+(function(){
+  const cv=document.getElementById('ledstrip');
+  const nm=document.getElementById('strip-name');
+  if(!cv)return;
+  const ctx=cv.getContext('2d');
+  const N=60;
+  let mode=0,frame=0,last=0;
+
+  function hsv(h,s,v){
+    const c=v*s,x=c*(1-Math.abs(((h/60)%2)-1)),m=v-c;
+    let r=0,g=0,b=0;
+    if(h<60){r=c;g=x}else if(h<120){r=x;g=c}else if(h<180){g=c;b=x}
+    else if(h<240){g=x;b=c}else if(h<300){r=x;b=c}else{r=c;b=x}
+    return [(r+m)*255|0,(g+m)*255|0,(b+m)*255|0];
+  }
+
+  const modes=[
+    {name:'rainbow',fn:(i,f)=>hsv((i*6+f*1.6)%360,.85,.92)},
+    {name:'comet',fn:(i,f)=>{
+      const head=(f*0.45)%(N+24);
+      const d=head-i;
+      if(d<0||d>20)return [8,5,2];
+      const v=Math.pow(1-d/20,1.6);
+      return [212*v|0,160*v|0,92*v|0];
+    }},
+    {name:'wave',fn:(i,f)=>{
+      const v=(Math.sin(i*0.42+f*0.05)+1)/2;
+      const v2=Math.pow(v,1.4);
+      return [212*v2|0,160*v2|0,92*v2|0];
+    }},
+    {name:'chase',fn:(i,f)=>{
+      const phase=Math.floor(f*0.18)%3;
+      if((i%3)===phase)return [220,170,100];
+      return [10,7,3];
+    }},
+    {name:'breathe',fn:(i,f)=>{
+      const v=Math.pow((Math.sin(f*0.035)+1)/2,1.6);
+      return [230*v|0,175*v|0,100*v|0];
+    }},
+  ];
+
+  function resize(){
+    const dpr=window.devicePixelRatio||1;
+    cv.width=cv.offsetWidth*dpr;
+    cv.height=38*dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  resize();
+  window.addEventListener('resize',()=>{resize()});
+
+  function draw(){
+    const w=cv.offsetWidth,h=38;
+    ctx.clearRect(0,0,w,h);
+    const stride=w/N;
+    const r=Math.min(stride*0.32,4.5);
+    const m=modes[mode];
+    nm.textContent=m.name;
+    ctx.shadowBlur=10;
+    for(let i=0;i<N;i++){
+      const [R,G,B]=m.fn(i,frame);
+      const col=`rgb(${R},${G},${B})`;
+      ctx.fillStyle=col;
+      ctx.shadowColor=col;
+      ctx.beginPath();
+      ctx.arc(stride*(i+0.5),h/2,r,0,Math.PI*2);
+      ctx.fill();
+    }
+    ctx.shadowBlur=0;
+    frame++;
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+  cv.addEventListener('click',()=>{
+    mode=(mode+1)%modes.length;
+    last=Date.now();
+  });
+  setInterval(()=>{
+    if(Date.now()-last>9500){mode=(mode+1)%modes.length;last=Date.now()}
+  },10000);
+})();
 
 // LED Power Budget
 function ledCalc(){
