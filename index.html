@@ -55,8 +55,16 @@ body{
 .italic{font-family:var(--italic);font-style:italic;font-weight:400}
 .mono{font-family:var(--mono);letter-spacing:0;font-size:.85em}
 
-/* Background — single restrained glow, no dot texture */
+/* Background — single restrained glow + animated circuit traces */
 .bg-glow{position:fixed;width:90vw;height:60vw;max-width:1100px;max-height:700px;border-radius:50%;background:radial-gradient(ellipse,var(--accent) 0%,transparent 65%);filter:blur(160px);opacity:.05;top:-25%;left:50%;transform:translateX(-50%);z-index:0;pointer-events:none}
+.bg-circuit{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:1}
+.bg-circuit path{fill:none;stroke:var(--accent);stroke-width:1;stroke-opacity:.08}
+.bg-circuit path.live{stroke-opacity:.5;stroke-dasharray:14 380;animation:trace 9s linear infinite}
+.bg-circuit path.live.l2{animation-duration:13s;animation-delay:-2s;stroke-dasharray:8 480}
+.bg-circuit path.live.l3{animation-duration:11s;animation-delay:-5s;stroke-dasharray:18 320}
+.bg-circuit path.live.l4{animation-duration:15s;animation-delay:-7s;stroke-dasharray:10 540}
+.bg-circuit circle{fill:var(--accent);fill-opacity:.18}
+@keyframes trace{to{stroke-dashoffset:-394}}
 
 /* Top bar */
 .bar{position:sticky;top:0;height:60px;z-index:50;display:flex;align-items:center;background:rgba(13,12,10,.82);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--line);font-family:var(--mono);font-size:.72rem}
@@ -108,6 +116,20 @@ body{
 .strip-cap .name{color:var(--accent);font-weight:500;text-transform:lowercase}
 .strip-cap .live{display:inline-flex;align-items:center;gap:.45rem}
 .strip-cap .live::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--success);box-shadow:0 0 5px var(--success);animation:p 2.5s ease-in-out infinite}
+
+/* Animated stepper rotor */
+.motor-viz{display:flex;align-items:center;gap:1.1rem;margin-top:1rem;padding-top:1rem;border-top:1px dashed var(--line)}
+.motor{width:84px;height:84px;flex-shrink:0;filter:drop-shadow(0 0 14px rgba(212,160,92,.12))}
+.motor .case{fill:var(--bg-2);stroke:var(--line-2);stroke-width:1.5}
+.motor .teeth{stroke:var(--line);stroke-width:1;fill:none}
+.motor .hub{fill:var(--surface-2);stroke:var(--line);stroke-width:1}
+.motor .mark{stroke:var(--accent);stroke-width:2.5;stroke-linecap:round}
+.motor .markdot{fill:var(--accent-2)}
+.motor .shaft{fill:var(--accent-deep);stroke:var(--accent);stroke-width:.6}
+.motor-info{display:flex;flex-direction:column;gap:.15rem;flex:1;min-width:0}
+.motor-info .big{font-family:var(--display);color:var(--text);font-size:1.5rem;font-weight:500;line-height:1;letter-spacing:-.02em;font-feature-settings:"tnum"}
+.motor-info .big em{font-family:var(--italic);font-style:italic;color:var(--accent);font-weight:400;font-size:.8em}
+.motor-info .sub{font-family:var(--mono);font-size:.66rem;color:var(--text-3);letter-spacing:.06em;text-transform:uppercase}
 
 /* Stats strip */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0;margin-top:3rem;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
@@ -352,6 +374,29 @@ footer .sig em{font-family:var(--italic);font-style:italic;color:var(--accent);f
 </style>
 </head>
 <body>
+<svg class="bg-circuit" viewBox="0 0 1400 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <path class="live" d="M 0 90 L 280 90 L 280 240 L 600 240 L 600 380"/>
+  <path class="live l2" d="M 1400 60 L 1080 60 L 1080 200 L 880 200 L 880 360 L 1100 360"/>
+  <path class="live l3" d="M 0 460 L 220 460 L 220 620 L 480 620 L 480 760"/>
+  <path class="live l4" d="M 1400 540 L 1140 540 L 1140 700 L 880 700 L 880 880"/>
+  <path d="M 700 0 L 700 140 L 540 140"/>
+  <path d="M 380 800 L 380 660 L 240 660"/>
+  <path d="M 1000 880 L 1000 740 L 820 740"/>
+  <path d="M 60 320 L 60 540"/>
+  <circle cx="280" cy="90" r="3"/>
+  <circle cx="600" cy="240" r="3"/>
+  <circle cx="600" cy="380" r="3"/>
+  <circle cx="1080" cy="60" r="3"/>
+  <circle cx="880" cy="200" r="3"/>
+  <circle cx="880" cy="360" r="3"/>
+  <circle cx="220" cy="460" r="3"/>
+  <circle cx="480" cy="620" r="3"/>
+  <circle cx="1140" cy="540" r="3"/>
+  <circle cx="880" cy="700" r="3"/>
+  <circle cx="700" cy="140" r="3"/>
+  <circle cx="380" cy="660" r="3"/>
+  <circle cx="1000" cy="740" r="3"/>
+</svg>
 <div class="bg-glow"></div>
 
 <header class="bar">
@@ -485,6 +530,31 @@ footer .sig em{font-family:var(--italic);font-style:italic;color:var(--accent);f
         <div class="out-row"><span class="lbl">Effective steps/rev</span><span class="val" id="st-eff">—</span></div>
         <div class="out-row"><span class="lbl">Pulse frequency</span><span class="val" id="st-freq">—</span></div>
         <div class="out-row"><span class="lbl">Half-period (PUL high)</span><span class="val" id="st-half">—</span></div>
+      </div>
+      <div class="motor-viz">
+        <svg class="motor" viewBox="0 0 100 100" aria-hidden="true">
+          <circle class="case" cx="50" cy="50" r="44"/>
+          <g class="teeth">
+            <line x1="50" y1="6" x2="50" y2="12"/>
+            <line x1="50" y1="88" x2="50" y2="94"/>
+            <line x1="6" y1="50" x2="12" y2="50"/>
+            <line x1="88" y1="50" x2="94" y2="50"/>
+            <line x1="19" y1="19" x2="23" y2="23"/>
+            <line x1="77" y1="77" x2="81" y2="81"/>
+            <line x1="19" y1="81" x2="23" y2="77"/>
+            <line x1="77" y1="23" x2="81" y2="19"/>
+          </g>
+          <g class="rotor" id="motor-rotor">
+            <circle class="hub" cx="50" cy="50" r="32"/>
+            <line class="mark" x1="50" y1="50" x2="50" y2="22"/>
+            <circle class="markdot" cx="50" cy="22" r="3"/>
+          </g>
+          <circle class="shaft" cx="50" cy="50" r="6"/>
+        </svg>
+        <div class="motor-info">
+          <div class="big"><span id="motor-rpm">60</span> <em>rpm</em></div>
+          <div class="sub" id="motor-stat">turning · 1/8 microstep</div>
+        </div>
       </div>
     </article>
 
@@ -752,6 +822,36 @@ function stepCalc(){
 ['st-spr','st-ms','st-rpm'].forEach(id=>document.getElementById(id).addEventListener('input',stepCalc));
 document.getElementById('st-ms').addEventListener('change',stepCalc);
 stepCalc();
+
+// Animated stepper rotor — visual cap so high RPMs don't strobe
+(function(){
+  const rotor=document.getElementById('motor-rotor');
+  const lbl=document.getElementById('motor-rpm');
+  const stat=document.getElementById('motor-stat');
+  const inp=document.getElementById('st-rpm');
+  const ms=document.getElementById('st-ms');
+  if(!rotor||!inp)return;
+  let angle=0,last=performance.now();
+  function frame(now){
+    const dt=Math.min(now-last,100)/1000;last=now;
+    const rpm=+inp.value||0;
+    const visible=Math.min(rpm,300);
+    angle=(angle+visible*6*dt)%360;
+    rotor.setAttribute('transform','rotate('+angle.toFixed(2)+' 50 50)');
+    requestAnimationFrame(frame);
+  }
+  function update(){
+    const rpm=+inp.value||0;
+    lbl.textContent=rpm.toFixed(rpm<10?1:0);
+    const msV=ms.options[ms.selectedIndex].text;
+    const note=rpm>300?' (capped at 300 visually)':'';
+    stat.textContent=(rpm>0?'turning':'idle')+' · '+msV+note;
+  }
+  inp.addEventListener('input',update);
+  ms.addEventListener('change',update);
+  update();
+  requestAnimationFrame(frame);
+})();
 
 // Resistor decoder
 const COLORS=[
