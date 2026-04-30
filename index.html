@@ -129,6 +129,37 @@ body{
 .card-title .sub{font-family:var(--mono);font-size:.66rem;color:var(--text-3);letter-spacing:.1em;text-transform:uppercase}
 .card-action{margin-left:auto}
 
+/* Collapse toggle */
+.card-toggle{
+  background:transparent;
+  border:1px solid var(--line);
+  color:var(--text-3);
+  width:30px;
+  height:30px;
+  border-radius:3px;
+  cursor:pointer;
+  font-family:var(--mono);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:all .2s var(--ease);
+  flex-shrink:0;
+  margin-left:auto;
+  padding:0;
+}
+.card-action + .card-toggle{margin-left:.5rem}
+.card-toggle:hover{border-color:var(--accent);color:var(--accent)}
+.card-toggle .chev{display:inline-block;transition:transform .25s var(--ease);font-size:.7rem;line-height:1;letter-spacing:0}
+.card.collapsed .card-toggle .chev{transform:rotate(-90deg)}
+.card.collapsed > *:not(.card-head){display:none}
+.card.collapsed .card-head{margin-bottom:0;padding-bottom:0;border-bottom:none}
+.card.collapsed{padding-bottom:1rem}
+
+/* Section toolbar */
+.sect-toolbar{display:flex;gap:.5rem;margin-left:.75rem}
+.sect-toolbar button{background:transparent;border:1px solid var(--line);color:var(--text-3);font-family:var(--mono);font-size:.6rem;padding:.3rem .55rem;border-radius:3px;cursor:pointer;letter-spacing:.1em;text-transform:uppercase;transition:all .2s}
+.sect-toolbar button:hover{border-color:var(--accent);color:var(--accent)}
+
 /* Form rows */
 .row{display:grid;grid-template-columns:1fr 1.4fr;gap:.85rem;align-items:center;margin-bottom:.7rem;padding:.35rem 0;border-bottom:1px dashed transparent;transition:border-color .2s}
 .row:hover{border-bottom-color:var(--line)}
@@ -837,6 +868,53 @@ function updateStats(){
 renderDevs();
 updateStats();
 setInterval(updateStats,60000);
+
+// Collapse / expand per card (state persists in localStorage)
+(function(){
+  const COLL_KEY='abhedh.collapsed.v1';
+  let state={};
+  try{state=JSON.parse(localStorage.getItem(COLL_KEY))||{}}catch{}
+  function save(){localStorage.setItem(COLL_KEY,JSON.stringify(state))}
+
+  const cards=Array.from(document.querySelectorAll('.card'));
+  cards.forEach(card=>{
+    const numEl=card.querySelector('.card-num');
+    const head=card.querySelector('.card-head');
+    if(!head||!numEl)return;
+    const id=numEl.textContent.trim();
+    const btn=document.createElement('button');
+    btn.className='card-toggle';
+    btn.type='button';
+    btn.setAttribute('aria-label','Collapse / expand');
+    btn.title='Collapse / expand';
+    btn.innerHTML='<span class="chev">▾</span>';
+    head.appendChild(btn);
+    if(state[id])card.classList.add('collapsed');
+    btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      const isCol=card.classList.toggle('collapsed');
+      state[id]=isCol;save();
+    });
+  });
+
+  // Add "collapse all / expand all" controls to each section divider
+  document.querySelectorAll('.sect').forEach(sect=>{
+    const tb=document.createElement('div');tb.className='sect-toolbar';
+    const next=sect.nextElementSibling;
+    const sectionCards=next&&next.classList.contains('grid')?Array.from(next.querySelectorAll('.card')):[];
+    if(sectionCards.length<2){return}
+    const cAll=document.createElement('button');cAll.textContent='collapse all';
+    const eAll=document.createElement('button');eAll.textContent='expand all';
+    cAll.addEventListener('click',()=>{
+      sectionCards.forEach(c=>{c.classList.add('collapsed');const id=c.querySelector('.card-num')?.textContent?.trim();if(id)state[id]=true});save();
+    });
+    eAll.addEventListener('click',()=>{
+      sectionCards.forEach(c=>{c.classList.remove('collapsed');const id=c.querySelector('.card-num')?.textContent?.trim();if(id)state[id]=false});save();
+    });
+    tb.appendChild(cAll);tb.appendChild(eAll);
+    sect.appendChild(tb);
+  });
+})();
 </script>
 </body>
 </html>
