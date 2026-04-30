@@ -771,16 +771,7 @@ footer .sig em{font-family:var(--italic);font-style:italic;color:var(--accent);f
               <option value="GRBW">SK6812 RGBW</option>
             </select>
           </div>
-          <div class="row"><label>Effect</label>
-            <select id="bld-effect">
-              <option value="solid">Solid color</option>
-              <option value="rainbow" selected>Rainbow</option>
-              <option value="comet">Comet</option>
-              <option value="breathe">Breathe</option>
-              <option value="chase">Theatre chase</option>
-              <option value="sparkle">Sparkle</option>
-            </select>
-          </div>
+          <div class="row"><label>Effect</label><select id="bld-effect"></select></div>
           <div class="row"><label>Color</label><div class="input-grp"><input type="color" id="bld-color" value="#d4a05c"/><input type="text" id="bld-color-hex" value="#d4a05c"/></div></div>
           <div class="row"><label>Brightness</label>
             <div class="input-grp" style="flex:1;display:flex;align-items:center;gap:.7rem">
@@ -1290,25 +1281,575 @@ setInterval(updateStats,60000);
     if(!m)return [212,160,92];
     return [parseInt(m[1].slice(0,2),16),parseInt(m[1].slice(2,4),16),parseInt(m[1].slice(4,6),16)];
   }
+  function fade(c,v){return [c[0]*v|0,c[1]*v|0,c[2]*v|0]}
+  function rng(i,f,s){return (Math.sin((i*97+f*s)*0.43)+1)/2}
+
   const EFFECTS={
-    solid:(i,f,N,c)=>c,
-    rainbow:(i,f,N,c)=>bhsv((i*360/Math.max(N,1)+f*1.4)%360,.85,.92),
-    comet:(i,f,N,c)=>{
-      const head=(f*0.55)%(N+25),d=head-i;
-      if(d<0||d>22)return [4,3,1];
-      const v=Math.pow(1-d/22,1.6);
-      return [c[0]*v|0,c[1]*v|0,c[2]*v|0];
-    },
-    breathe:(i,f,N,c)=>{
-      const v=Math.pow((Math.sin(f*0.04)+1)/2,1.5);
-      return [c[0]*v|0,c[1]*v|0,c[2]*v|0];
-    },
-    chase:(i,f,N,c)=>(i%3===Math.floor(f*0.18)%3)?c:[4,3,1],
-    sparkle:(i,f,N,c)=>{
-      const seed=(Math.sin((i*97+f*3.7)*0.43)+1)/2;
-      return seed>0.96?[Math.min(c[0]+30,255),Math.min(c[1]+30,255),Math.min(c[2]+30,255)]:[4,3,1];
-    },
+    // ===== Basics =====
+    solid:{name:'Solid color',cat:'Basics',
+      pv:(i,f,N,c)=>c,
+      ar:c=>`  uint32_t cc = strip.Color(${c[0]},${c[1]},${c[2]});
+  for (int i = 0; i < NUM_LEDS; i++) strip.setPixelColor(i, cc);`},
+    off:{name:'Off',cat:'Basics',
+      pv:(i,f,N,c)=>[0,0,0],
+      ar:c=>`  strip.clear();`},
+
+    // ===== Rainbow & gradient =====
+    rainbow:{name:'Rainbow',cat:'Rainbow & gradient',
+      pv:(i,f,N,c)=>bhsv((i*360/Math.max(N,1)+f*1.4)%360,.85,.92),
+      ar:c=>`  for (int i = 0; i < NUM_LEDS; i++) {
+    uint16_t hue = ((i * 65536L / NUM_LEDS) + frame * 256) & 0xFFFF;
+    strip.setPixelColor(i, strip.gamma32(strip.ColorHSV(hue)));
+  }`},
+    rainbow_chase:{name:'Rainbow chase',cat:'Rainbow & gradient',
+      pv:(i,f,N,c)=>{if((i%3)!==Math.floor(f*0.18)%3)return [3,2,1];return bhsv((i*8+f*1.5)%360,.9,.9)},
+      ar:c=>`  int phase = (frame / 6) % 3;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    if (i % 3 == phase) {
+      uint16_t hue = ((i * 65536L / NUM_LEDS) + frame * 256) & 0xFFFF;
+      strip.setPixelColor(i, strip.gamma32(strip.ColorHSV(hue)));
+    } else strip.setPixelColor(i, 0);
+  }`},
+    hue_cycle:{name:'Hue cycle',cat:'Rainbow & gradient',
+      pv:(i,f,N,c)=>bhsv((f*0.5)%360,.9,.9),
+      ar:c=>`  uint16_t hue = (frame * 100) & 0xFFFF;
+  uint32_t cc = strip.gamma32(strip.ColorHSV(hue));
+  for (int i = 0; i < NUM_LEDS; i++) strip.setPixelColor(i, cc);`},
+    gradient:{name:'Gradient sweep',cat:'Rainbow & gradient',
+      pv:(i,f,N,c)=>fade(c,((i+f*0.3)%N)/N),
+      ar:c=>`  for (int i = 0; i < NUM_LEDS; i++) {
+    int j = (i + (frame / 3)) % NUM_LEDS;
+    uint8_t v = (j * 255) / NUM_LEDS;
+    strip.setPixelColor(i, strip.Color(${c[0]} * v / 255, ${c[1]} * v / 255, ${c[2]} * v / 255));
+  }`},
+    wipe:{name:'Color wipe',cat:'Rainbow & gradient',
+      pv:(i,f,N,c)=>{const head=(f*0.4)%(N+30);return i<=head?c:[3,2,1]},
+      ar:c=>`  int head = (frame / 3) % (NUM_LEDS + 30);
+  for (int i = 0; i < NUM_LEDS; i++)
+    strip.setPixelColor(i, i <= head ? strip.Color(${c[0]},${c[1]},${c[2]}) : 0);`},
+    alternate:{name:'Two-tone alternate',cat:'Rainbow & gradient',
+      pv:(i,f,N,c)=>{const phase=Math.floor(f/15)%2;return (i%2)===phase?c:[255-c[0],255-c[1],255-c[2]]},
+      ar:c=>`  int phase = (frame / 15) % 2;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    if ((i % 2) == phase) strip.setPixelColor(i, strip.Color(${c[0]},${c[1]},${c[2]}));
+    else strip.setPixelColor(i, strip.Color(${255-c[0]},${255-c[1]},${255-c[2]}));
+  }`},
+    sunset:{name:'Sunset gradient',cat:'Rainbow & gradient',
+      pv:(i,f,N,c)=>{
+        const t=i/N;const v=(Math.sin(f*0.02)+1)/2*0.3+0.7;
+        if(t<0.4)return [(255*v)|0,(80*v)|0,0];
+        if(t<0.7)return [(255*v)|0,(40*v)|0,(60*v)|0];
+        return [(120*v)|0,0,(140*v)|0];
+      },
+      ar:c=>`  for (int i = 0; i < NUM_LEDS; i++) {
+    float t = (float)i / NUM_LEDS;
+    if (t < 0.4f) strip.setPixelColor(i, strip.Color(255, 80, 0));
+    else if (t < 0.7f) strip.setPixelColor(i, strip.Color(255, 40, 60));
+    else strip.setPixelColor(i, strip.Color(120, 0, 140));
+  }`},
+    ocean:{name:'Ocean wave',cat:'Rainbow & gradient',
+      pv:(i,f,N,c)=>{const v=Math.sin(i*0.2+f*0.03)*0.5+0.5;return [0,(v*80)|0,(140+v*100)|0]},
+      ar:c=>`  for (int i = 0; i < NUM_LEDS; i++) {
+    float v = (sin(i * 0.2f + frame * 0.03f) + 1.0f) * 0.5f;
+    strip.setPixelColor(i, strip.Color(0, (uint8_t)(v * 80), (uint8_t)(140 + v * 100)));
+  }`},
+
+    // ===== Motion =====
+    comet:{name:'Comet',cat:'Motion',
+      pv:(i,f,N,c)=>{const head=(f*0.55)%(N+25),d=head-i;if(d<0||d>22)return [4,3,1];return fade(c,Math.pow(1-d/22,1.6))},
+      ar:c=>`  strip.clear();
+  int head = frame % (NUM_LEDS + 25);
+  for (int i = 0; i < 22; i++) {
+    int pos = head - i;
+    if (pos >= 0 && pos < NUM_LEDS) {
+      uint8_t v = 255 - (i * 11);
+      strip.setPixelColor(pos, strip.Color(${c[0]} * v / 255, ${c[1]} * v / 255, ${c[2]} * v / 255));
+    }
+  }`},
+    pong:{name:'Pong (bouncing)',cat:'Motion',
+      pv:(i,f,N,c)=>{
+        const cycle=(f*0.5)%(2*(N-1));
+        const head=cycle<N?cycle:2*(N-1)-cycle;
+        const d=Math.abs(i-head);
+        if(d>2)return [3,2,1];
+        return fade(c,Math.pow(1-d/2,1.5));
+      },
+      ar:c=>`  strip.clear();
+  int cycle = frame % (2 * (NUM_LEDS - 1));
+  int head = cycle < NUM_LEDS ? cycle : (2 * (NUM_LEDS - 1)) - cycle;
+  for (int d = -2; d <= 2; d++) {
+    int p = head + d;
+    if (p >= 0 && p < NUM_LEDS) {
+      uint8_t v = 255 - abs(d) * 80;
+      strip.setPixelColor(p, strip.Color(${c[0]} * v / 255, ${c[1]} * v / 255, ${c[2]} * v / 255));
+    }
+  }`},
+    cylon:{name:'Cylon scanner',cat:'Motion',
+      pv:(i,f,N,c)=>{
+        const cycle=(f*0.4)%(2*(N+10));
+        const head=cycle<N+5?cycle:2*(N+10)-cycle;
+        const d=Math.abs(i-head);
+        if(d>5)return [3,2,1];
+        return fade(c,Math.pow(1-d/5,1.8));
+      },
+      ar:c=>`  strip.clear();
+  int cycle = frame % (2 * (NUM_LEDS + 10));
+  int head = cycle < (NUM_LEDS + 5) ? cycle : (2 * (NUM_LEDS + 10) - cycle);
+  for (int d = -5; d <= 5; d++) {
+    int p = head + d;
+    if (p >= 0 && p < NUM_LEDS) {
+      uint8_t v = 255 - abs(d) * 50;
+      strip.setPixelColor(p, strip.Color(${c[0]} * v / 255, ${c[1]} * v / 255, ${c[2]} * v / 255));
+    }
+  }`},
+    sine_wave:{name:'Sine wave',cat:'Motion',
+      pv:(i,f,N,c)=>{const v=(Math.sin(i*0.4-f*0.08)+1)/2;return fade(c,Math.pow(v,1.4))},
+      ar:c=>`  for (int i = 0; i < NUM_LEDS; i++) {
+    float v = (sin(i * 0.4f - frame * 0.08f) + 1.0f) * 0.5f;
+    v = v * v;
+    strip.setPixelColor(i, strip.Color((uint8_t)(${c[0]} * v), (uint8_t)(${c[1]} * v), (uint8_t)(${c[2]} * v)));
+  }`},
+    running:{name:'Running lights',cat:'Motion',
+      pv:(i,f,N,c)=>{const v=(Math.sin(i*0.3-f*0.1)+1)/2;return fade(c,v)},
+      ar:c=>`  for (int i = 0; i < NUM_LEDS; i++) {
+    float v = (sin(i * 0.3f - frame * 0.1f) + 1.0f) * 0.5f;
+    strip.setPixelColor(i, strip.Color((uint8_t)(${c[0]} * v), (uint8_t)(${c[1]} * v), (uint8_t)(${c[2]} * v)));
+  }`},
+    snake:{name:'Snake',cat:'Motion',
+      pv:(i,f,N,c)=>{const len=12,head=(f*0.5)%(N+len);if(i>head-len&&i<=head)return c;return [4,3,1]},
+      ar:c=>`  strip.clear();
+  int head = frame % (NUM_LEDS + 12);
+  for (int j = 0; j < 12; j++) {
+    int p = head - j;
+    if (p >= 0 && p < NUM_LEDS) strip.setPixelColor(p, strip.Color(${c[0]},${c[1]},${c[2]}));
+  }`},
+    meteor:{name:'Meteor',cat:'Motion',
+      pv:(i,f,N,c)=>{
+        const head=(f*0.55)%(N+25),d=head-i;
+        if(d>=0&&d<22)return fade(c,Math.pow(1-d/22,1.6));
+        if(rng(i,f,1.5)>0.97)return fade(c,0.5);
+        return [3,2,1];
+      },
+      ar:c=>`  strip.clear();
+  int head = frame % (NUM_LEDS + 25);
+  for (int i = 0; i < 22; i++) {
+    int p = head - i;
+    if (p >= 0 && p < NUM_LEDS) {
+      uint8_t v = 255 - (i * 11);
+      strip.setPixelColor(p, strip.Color(${c[0]} * v / 255, ${c[1]} * v / 255, ${c[2]} * v / 255));
+    }
+  }
+  for (int s = 0; s < NUM_LEDS / 30; s++) {
+    int p = random(NUM_LEDS);
+    if (p != head) strip.setPixelColor(p, strip.Color(${(c[0]/3)|0}, ${(c[1]/3)|0}, ${(c[2]/3)|0}));
+  }`},
+    chase:{name:'Theatre chase',cat:'Motion',
+      pv:(i,f,N,c)=>(i%3===Math.floor(f*0.18)%3)?c:[4,3,1],
+      ar:c=>`  int phase = (frame / 6) % 3;
+  for (int i = 0; i < NUM_LEDS; i++)
+    strip.setPixelColor(i, (i % 3 == phase) ? strip.Color(${c[0]},${c[1]},${c[2]}) : 0);`},
+
+    // ===== Pulse & strobe =====
+    breathe:{name:'Breathe',cat:'Pulse & strobe',
+      pv:(i,f,N,c)=>fade(c,Math.pow((Math.sin(f*0.04)+1)/2,1.5)),
+      ar:c=>`  float t = (sin(frame * 0.04f) + 1.0f) * 0.5f;
+  uint8_t v = (uint8_t)(t * 255);
+  for (int i = 0; i < NUM_LEDS; i++)
+    strip.setPixelColor(i, strip.Color(${c[0]} * v / 255, ${c[1]} * v / 255, ${c[2]} * v / 255));`},
+    heartbeat:{name:'Heartbeat',cat:'Pulse & strobe',
+      pv:(i,f,N,c)=>{
+        const tt=f%80;let v=0.05;
+        if(tt<6)v=1;
+        else if(tt<12)v=Math.max(0,1-(tt-6)/6);
+        else if(tt<18)v=Math.min(1,(tt-12)/3);
+        else if(tt<22)v=Math.max(0,1-(tt-18)/4);
+        return fade(c,v);
+      },
+      ar:c=>`  int tt = frame % 80;
+  float v = 0.05f;
+  if (tt < 6) v = 1;
+  else if (tt < 12) v = 1.0f - (tt - 6) / 6.0f;
+  else if (tt < 18) v = (tt - 12) / 3.0f;
+  else if (tt < 22) v = 1.0f - (tt - 18) / 4.0f;
+  uint8_t b = (uint8_t)(v * 255);
+  for (int i = 0; i < NUM_LEDS; i++)
+    strip.setPixelColor(i, strip.Color(${c[0]} * b / 255, ${c[1]} * b / 255, ${c[2]} * b / 255));`},
+    pulse:{name:'Pulse',cat:'Pulse & strobe',
+      pv:(i,f,N,c)=>fade(c,Math.pow(1-(f%50)/50,2)),
+      ar:c=>`  float tt = (frame % 50) / 50.0f;
+  float v = (1.0f - tt) * (1.0f - tt);
+  uint8_t b = (uint8_t)(v * 255);
+  for (int i = 0; i < NUM_LEDS; i++)
+    strip.setPixelColor(i, strip.Color(${c[0]} * b / 255, ${c[1]} * b / 255, ${c[2]} * b / 255));`},
+    strobe:{name:'Strobe',cat:'Pulse & strobe',
+      pv:(i,f,N,c)=>Math.floor(f/4)%2?c:[0,0,0],
+      ar:c=>`  bool on = (frame / 4) % 2;
+  uint32_t cc = on ? strip.Color(${c[0]},${c[1]},${c[2]}) : 0;
+  for (int i = 0; i < NUM_LEDS; i++) strip.setPixelColor(i, cc);`},
+    police:{name:'Police lights',cat:'Pulse & strobe',
+      pv:(i,f,N,c)=>{
+        const phase=Math.floor(f/12)%4,left=i<N/2;
+        if(phase===0&&left)return [255,0,0];
+        if(phase===1&&left)return [80,0,0];
+        if(phase===2&&!left)return [0,0,255];
+        if(phase===3&&!left)return [0,0,80];
+        return [0,0,0];
+      },
+      ar:c=>`  strip.clear();
+  int phase = (frame / 12) % 4;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    bool left = i < NUM_LEDS / 2;
+    if (phase == 0 && left) strip.setPixelColor(i, strip.Color(255, 0, 0));
+    else if (phase == 1 && left) strip.setPixelColor(i, strip.Color(80, 0, 0));
+    else if (phase == 2 && !left) strip.setPixelColor(i, strip.Color(0, 0, 255));
+    else if (phase == 3 && !left) strip.setPixelColor(i, strip.Color(0, 0, 80));
+  }`},
+    ambulance:{name:'Ambulance',cat:'Pulse & strobe',
+      pv:(i,f,N,c)=>Math.floor(f/8)%2?[255,0,0]:[255,255,255],
+      ar:c=>`  bool red = (frame / 8) % 2 == 0;
+  uint32_t cc = red ? strip.Color(255, 0, 0) : strip.Color(255, 255, 255);
+  for (int i = 0; i < NUM_LEDS; i++) strip.setPixelColor(i, cc);`},
+    fire_truck:{name:'Fire truck',cat:'Pulse & strobe',
+      pv:(i,f,N,c)=>{
+        const phase=Math.floor(f/8)%3;
+        if(i%3===phase)return [255,0,0];
+        if(i%3===(phase+1)%3)return [255,200,0];
+        return [0,0,0];
+      },
+      ar:c=>`  strip.clear();
+  int phase = (frame / 8) % 3;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    if (i % 3 == phase) strip.setPixelColor(i, strip.Color(255, 0, 0));
+    else if (i % 3 == (phase + 1) % 3) strip.setPixelColor(i, strip.Color(255, 200, 0));
+  }`},
+
+    // ===== Sparkle & random =====
+    sparkle:{name:'Sparkle',cat:'Sparkle & random',
+      pv:(i,f,N,c)=>rng(i,f,3.7)>0.96?fade(c,1):[3,2,1],
+      ar:c=>`  for (int i = 0; i < NUM_LEDS; i++) strip.setPixelColor(i, 0);
+  for (int s = 0; s < NUM_LEDS / 8; s++) {
+    int p = random(NUM_LEDS);
+    strip.setPixelColor(p, strip.Color(${c[0]},${c[1]},${c[2]}));
+  }`},
+    sparkle_on:{name:'Sparkle on color',cat:'Sparkle & random',
+      pv:(i,f,N,c)=>rng(i,f,3.7)>0.96?[255,255,255]:fade(c,0.3),
+      ar:c=>`  uint32_t base = strip.Color(${(c[0]/3)|0},${(c[1]/3)|0},${(c[2]/3)|0});
+  for (int i = 0; i < NUM_LEDS; i++) strip.setPixelColor(i, base);
+  for (int s = 0; s < NUM_LEDS / 12; s++) {
+    int p = random(NUM_LEDS);
+    strip.setPixelColor(p, strip.Color(255, 255, 255));
+  }`},
+    twinkle:{name:'Twinkle',cat:'Sparkle & random',
+      pv:(i,f,N,c)=>{
+        const seed=Math.sin(i*47.13)*0.5+0.5;
+        const phase=(f*0.04+seed*Math.PI*2)%(Math.PI*2);
+        return fade(c,Math.max(0,Math.sin(phase)));
+      },
+      ar:c=>`  for (int i = 0; i < NUM_LEDS; i++) {
+    float seed = sin(i * 47.13f) * 0.5f + 0.5f;
+    float phase = fmodf(frame * 0.04f + seed * 6.283f, 6.283f);
+    float v = sin(phase);
+    if (v < 0) v = 0;
+    strip.setPixelColor(i, strip.Color((uint8_t)(${c[0]} * v), (uint8_t)(${c[1]} * v), (uint8_t)(${c[2]} * v)));
+  }`},
+    confetti:{name:'Confetti',cat:'Sparkle & random',
+      pv:(i,f,N,c)=>{
+        const seed=(Math.sin((i*97+Math.floor(f/8))*0.43)+1)/2;
+        if(seed>0.85){const hue=((seed*1000+Math.floor(f/8)*30)|0)%360;return bhsv(hue,.9,.85)}
+        return [3,2,1];
+      },
+      ar:c=>`  for (int i = 0; i < NUM_LEDS; i++) strip.setPixelColor(i, 0);
+  for (int s = 0; s < NUM_LEDS / 7; s++) {
+    int p = random(NUM_LEDS);
+    uint16_t hue = random(65536);
+    strip.setPixelColor(p, strip.gamma32(strip.ColorHSV(hue)));
+  }`},
+    random_fade:{name:'Random fade',cat:'Sparkle & random',
+      pv:(i,f,N,c)=>{
+        const seed1=Math.sin(i*31.41)*0.5+0.5;
+        const period=60+seed1*60;
+        const phase=(f+seed1*period)%period;
+        const v=Math.max(0,Math.sin(phase/period*Math.PI));
+        return bhsv(seed1*360,.8,v*.8);
+      },
+      ar:c=>`  for (int i = 0; i < NUM_LEDS; i++) {
+    float seed = sin(i * 31.41f) * 0.5f + 0.5f;
+    float period = 60.0f + seed * 60.0f;
+    float phase = fmodf(frame + seed * period, period);
+    float v = sin(phase / period * 3.14159f);
+    if (v < 0) v = 0;
+    uint16_t hue = (uint16_t)(seed * 65535);
+    strip.setPixelColor(i, strip.gamma32(strip.ColorHSV(hue, 200, (uint8_t)(v * 200))));
+  }`},
+
+    // ===== Nature =====
+    fire:{name:'Fire',cat:'Nature',
+      pv:(i,f,N,c)=>{
+        const heat=Math.max(0,(Math.sin(i*7.31+f*0.3)+Math.sin(i*4.13+f*0.41))*0.5+0.4);
+        return [Math.min(255,heat*255|0),Math.min(255,heat*100|0),0];
+      },
+      ar:c=>`  for (int i = 0; i < NUM_LEDS; i++) {
+    float h = (sin(i * 7.31f + frame * 0.3f) + sin(i * 4.13f + frame * 0.41f)) * 0.5f + 0.4f;
+    if (h < 0) h = 0;
+    if (h > 1) h = 1;
+    strip.setPixelColor(i, strip.Color((uint8_t)(h * 255), (uint8_t)(h * 100), 0));
+  }`},
+    water:{name:'Water ripple',cat:'Nature',
+      pv:(i,f,N,c)=>{
+        const v=(Math.sin(i*0.4+f*0.06)+Math.sin(i*0.13-f*0.04))/2;
+        const v2=(v+1)/2;
+        return [0,(v2*100)|0,(180+v2*75)|0];
+      },
+      ar:c=>`  for (int i = 0; i < NUM_LEDS; i++) {
+    float v = (sin(i * 0.4f + frame * 0.06f) + sin(i * 0.13f - frame * 0.04f)) * 0.25f + 0.5f;
+    strip.setPixelColor(i, strip.Color(0, (uint8_t)(v * 100), (uint8_t)(180 + v * 75)));
+  }`},
+    lava:{name:'Lava flow',cat:'Nature',
+      pv:(i,f,N,c)=>{
+        const v=(Math.sin(i*0.2+f*0.03)+Math.cos(i*0.07-f*0.05))*0.25+0.5;
+        return [(200+v*55)|0,(v*80)|0,0];
+      },
+      ar:c=>`  for (int i = 0; i < NUM_LEDS; i++) {
+    float v = (sin(i * 0.2f + frame * 0.03f) + cos(i * 0.07f - frame * 0.05f)) * 0.25f + 0.5f;
+    strip.setPixelColor(i, strip.Color((uint8_t)(200 + v * 55), (uint8_t)(v * 80), 0));
+  }`},
+    plasma:{name:'Plasma',cat:'Nature',
+      pv:(i,f,N,c)=>{
+        const x=i*0.1,t=f*0.05;
+        const v=Math.sin(x+t)+Math.sin(x*2+t*1.3)+Math.sin(x*0.5+t*0.7);
+        return bhsv(((v+3)*60)%360,.8,.85);
+      },
+      ar:c=>`  for (int i = 0; i < NUM_LEDS; i++) {
+    float x = i * 0.1f, t = frame * 0.05f;
+    float v = sin(x + t) + sin(x * 2 + t * 1.3f) + sin(x * 0.5f + t * 0.7f);
+    uint16_t hue = (uint16_t)(fmodf((v + 3) * 60.0f, 360.0f) * 65535 / 360);
+    strip.setPixelColor(i, strip.gamma32(strip.ColorHSV(hue, 200, 220)));
+  }`},
+    aurora:{name:'Aurora borealis',cat:'Nature',
+      pv:(i,f,N,c)=>{
+        const v1=Math.sin(i*0.15+f*0.04),v2=Math.sin(i*0.1-f*0.05);
+        return bhsv(130+v1*40+v2*30,0.6+v2*0.3,0.7);
+      },
+      ar:c=>`  for (int i = 0; i < NUM_LEDS; i++) {
+    float v1 = sin(i * 0.15f + frame * 0.04f);
+    float v2 = sin(i * 0.1f - frame * 0.05f);
+    float h = 130.0f + v1 * 40.0f + v2 * 30.0f;
+    uint16_t hue = (uint16_t)(h * 65535 / 360);
+    strip.setPixelColor(i, strip.gamma32(strip.ColorHSV(hue, 180, 180)));
+  }`},
+
+    // ===== Holiday & flags =====
+    christmas:{name:'Christmas',cat:'Holiday & flags',
+      pv:(i,f,N,c)=>Math.floor((i+f*0.2)/4)%2===0?[220,0,0]:[0,180,0],
+      ar:c=>`  for (int i = 0; i < NUM_LEDS; i++) {
+    bool red = ((i + (frame / 5)) / 4) % 2 == 0;
+    strip.setPixelColor(i, red ? strip.Color(220, 0, 0) : strip.Color(0, 180, 0));
+  }`},
+    halloween:{name:'Halloween',cat:'Holiday & flags',
+      pv:(i,f,N,c)=>(i%2===Math.floor(f/20)%2)?[255,100,0]:[80,0,120],
+      ar:c=>`  int phase = (frame / 20) % 2;
+  for (int i = 0; i < NUM_LEDS; i++)
+    strip.setPixelColor(i, ((i % 2) == phase) ? strip.Color(255, 100, 0) : strip.Color(80, 0, 120));`},
+    valentine:{name:'Valentine',cat:'Holiday & flags',
+      pv:(i,f,N,c)=>{
+        const v=(Math.sin(f*0.06)+1)/2*0.5+0.5;
+        return (i%2)?[(220*v)|0,0,(120*v)|0]:[(255*v)|0,(40*v)|0,(80*v)|0];
+      },
+      ar:c=>`  float v = (sin(frame * 0.06f) + 1.0f) * 0.25f + 0.5f;
+  uint8_t b = (uint8_t)(v * 255);
+  for (int i = 0; i < NUM_LEDS; i++) {
+    if (i % 2) strip.setPixelColor(i, strip.Color((220 * b) / 255, 0, (120 * b) / 255));
+    else strip.setPixelColor(i, strip.Color(b, (40 * b) / 255, (80 * b) / 255));
+  }`},
+    india:{name:'India tricolor',cat:'Holiday & flags',
+      pv:(i,f,N,c)=>{
+        const t=i/N;
+        if(t<0.333)return [255,153,51];
+        if(t<0.666)return [255,255,255];
+        return [19,136,8];
+      },
+      ar:c=>`  for (int i = 0; i < NUM_LEDS; i++) {
+    if (i < NUM_LEDS / 3) strip.setPixelColor(i, strip.Color(255, 153, 51));
+    else if (i < (NUM_LEDS * 2) / 3) strip.setPixelColor(i, strip.Color(255, 255, 255));
+    else strip.setPixelColor(i, strip.Color(19, 136, 8));
+  }`},
+    usa:{name:'USA stars & stripes',cat:'Holiday & flags',
+      pv:(i,f,N,c)=>{
+        const t=i/N;
+        if(t<0.33){if(rng(i,f,2)>0.92)return [255,255,255];return [0,40,104]}
+        if(Math.floor((i-N*0.33)/(N*0.05))%2===0)return [191,10,48];
+        return [255,255,255];
+      },
+      ar:c=>`  for (int i = 0; i < NUM_LEDS; i++) {
+    if (i < NUM_LEDS / 3) {
+      bool star = (random(100) > 92);
+      strip.setPixelColor(i, star ? strip.Color(255, 255, 255) : strip.Color(0, 40, 104));
+    } else {
+      int idx = ((i - NUM_LEDS / 3) * 13) / (NUM_LEDS * 2 / 3);
+      strip.setPixelColor(i, (idx % 2 == 0) ? strip.Color(191, 10, 48) : strip.Color(255, 255, 255));
+    }
+  }`},
+    uk:{name:'UK Union Jack',cat:'Holiday & flags',
+      pv:(i,f,N,c)=>{
+        const t=i/N;
+        if((t>0.47&&t<0.53)||(t>0.22&&t<0.28)||(t>0.72&&t<0.78))return [200,16,46];
+        if((t>0.45&&t<0.55)||Math.abs(t-0.25)<0.05||Math.abs(t-0.75)<0.05)return [255,255,255];
+        return [1,33,105];
+      },
+      ar:c=>`  for (int i = 0; i < NUM_LEDS; i++) {
+    float t = (float)i / NUM_LEDS;
+    if ((t > 0.47f && t < 0.53f) || (t > 0.22f && t < 0.28f) || (t > 0.72f && t < 0.78f))
+      strip.setPixelColor(i, strip.Color(200, 16, 46));
+    else if ((t > 0.45f && t < 0.55f) || fabsf(t - 0.25f) < 0.05f || fabsf(t - 0.75f) < 0.05f)
+      strip.setPixelColor(i, strip.Color(255, 255, 255));
+    else strip.setPixelColor(i, strip.Color(1, 33, 105));
+  }`},
+    pride:{name:'Pride rainbow',cat:'Holiday & flags',
+      pv:(i,f,N,c)=>{
+        const cs=[[228,3,3],[255,140,0],[255,237,0],[0,128,38],[36,64,142],[115,41,130]];
+        return cs[Math.floor(i*cs.length/N)%cs.length];
+      },
+      ar:c=>`  uint32_t cs[6] = {strip.Color(228,3,3), strip.Color(255,140,0), strip.Color(255,237,0), strip.Color(0,128,38), strip.Color(36,64,142), strip.Color(115,41,130)};
+  for (int i = 0; i < NUM_LEDS; i++) {
+    int idx = (i * 6) / NUM_LEDS;
+    strip.setPixelColor(i, cs[idx % 6]);
+  }`},
+    holi:{name:'Holi colors',cat:'Holiday & flags',
+      pv:(i,f,N,c)=>{
+        const seed=(Math.sin((i*97+Math.floor(f/12))*0.43)+1)/2;
+        if(seed>0.65){const hue=((seed*7000+Math.floor(f/12)*30)|0)%360;return bhsv(hue,.95,.9)}
+        return [10,8,5];
+      },
+      ar:c=>`  for (int i = 0; i < NUM_LEDS; i++) strip.setPixelColor(i, strip.Color(10, 8, 5));
+  for (int s = 0; s < NUM_LEDS / 3; s++) {
+    int p = random(NUM_LEDS);
+    uint16_t hue = random(65536);
+    strip.setPixelColor(p, strip.gamma32(strip.ColorHSV(hue, 240, 230)));
+  }`},
+
+    // ===== Reactive =====
+    vu_meter:{name:'VU meter',cat:'Reactive',
+      pv:(i,f,N,c)=>{
+        const level=Math.abs(Math.sin(f*0.04))*N;
+        if(i>level)return [3,2,1];
+        const t=i/N;
+        if(t<0.6)return [0,200,0];
+        if(t<0.85)return [255,200,0];
+        return [255,0,0];
+      },
+      ar:c=>`  float level = fabsf(sin(frame * 0.04f)) * NUM_LEDS;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    if (i > level) strip.setPixelColor(i, 0);
+    else if (i < NUM_LEDS * 0.6f) strip.setPixelColor(i, strip.Color(0, 200, 0));
+    else if (i < NUM_LEDS * 0.85f) strip.setPixelColor(i, strip.Color(255, 200, 0));
+    else strip.setPixelColor(i, strip.Color(255, 0, 0));
+  }`},
+    spectrum:{name:'Spectrum bars',cat:'Reactive',
+      pv:(i,f,N,c)=>{
+        const bands=8,bw=N/bands;
+        const band=Math.floor(i/bw),inBand=(i%bw)/bw;
+        const seed=Math.sin(band*1.3+f*0.04)*0.5+0.5;
+        if(inBand>seed)return [3,2,1];
+        return bhsv(band*45,.8,.85);
+      },
+      ar:c=>`  int bands = 8, bw = NUM_LEDS / bands;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    int band = i / bw;
+    float local = (float)(i % bw) / bw;
+    float seed = sin(band * 1.3f + frame * 0.04f) * 0.5f + 0.5f;
+    if (local > seed) { strip.setPixelColor(i, 0); continue; }
+    uint16_t hue = (uint16_t)((band * 45) * 65535L / 360);
+    strip.setPixelColor(i, strip.gamma32(strip.ColorHSV(hue, 200, 220)));
+  }`},
+    matrix:{name:'Matrix rain',cat:'Reactive',
+      pv:(i,f,N,c)=>{
+        const seed=Math.sin(i*7.3)*0.5+0.5;
+        const period=30+seed*20;
+        const phase=(f+seed*period)%period;
+        const v=Math.pow(Math.max(0,1-phase/period),1.5);
+        return [0,(v*255)|0,(v*30)|0];
+      },
+      ar:c=>`  for (int i = 0; i < NUM_LEDS; i++) {
+    float seed = sin(i * 7.3f) * 0.5f + 0.5f;
+    float period = 30.0f + seed * 20.0f;
+    float phase = fmodf(frame + seed * period, period);
+    float v = 1.0f - phase / period;
+    if (v < 0) v = 0;
+    v = v * v;
+    strip.setPixelColor(i, strip.Color(0, (uint8_t)(v * 255), (uint8_t)(v * 30)));
+  }`},
+    cyber:{name:'Cyberpunk',cat:'Reactive',
+      pv:(i,f,N,c)=>{
+        const v=Math.sin(i*0.4+f*0.06);
+        if(v>0)return [(v*255)|0,0,(v*220)|0];
+        return [0,(-v*200)|0,(-v*255)|0];
+      },
+      ar:c=>`  for (int i = 0; i < NUM_LEDS; i++) {
+    float v = sin(i * 0.4f + frame * 0.06f);
+    if (v > 0) strip.setPixelColor(i, strip.Color((uint8_t)(v * 255), 0, (uint8_t)(v * 220)));
+    else strip.setPixelColor(i, strip.Color(0, (uint8_t)(-v * 200), (uint8_t)(-v * 255)));
+  }`},
+    ekg:{name:'EKG line',cat:'Reactive',
+      pv:(i,f,N,c)=>{
+        const head=(f*0.7)%(N+10),d=head-i;
+        if(d<0||d>3)return [3,2,1];
+        return fade(c,Math.pow(1-d/3,2));
+      },
+      ar:c=>`  strip.clear();
+  int head = frame % (NUM_LEDS + 10);
+  for (int j = 0; j < 4; j++) {
+    int p = head - j;
+    if (p >= 0 && p < NUM_LEDS) {
+      uint8_t v = 255 - j * 70;
+      strip.setPixelColor(p, strip.Color(${c[0]} * v / 255, ${c[1]} * v / 255, ${c[2]} * v / 255));
+    }
+  }`},
+
+    // ===== Geometric =====
+    segments:{name:'Three segments',cat:'Geometric',
+      pv:(i,f,N,c)=>{
+        const t=i/N,phase=Math.floor(f/30)%3;
+        if(phase===0&&t<0.333)return c;
+        if(phase===1&&t>=0.333&&t<0.666)return c;
+        if(phase===2&&t>=0.666)return c;
+        return [3,2,1];
+      },
+      ar:c=>`  strip.clear();
+  int phase = (frame / 30) % 3;
+  uint32_t cc = strip.Color(${c[0]},${c[1]},${c[2]});
+  int third = NUM_LEDS / 3;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    int seg = i / third;
+    if (seg > 2) seg = 2;
+    if (seg == phase) strip.setPixelColor(i, cc);
+  }`},
+    bookends:{name:'Bookends',cat:'Geometric',
+      pv:(i,f,N,c)=>{
+        const len=Math.floor((Math.sin(f*0.04)+1)/2*N/3);
+        if(i<len||i>=N-len)return c;
+        return [3,2,1];
+      },
+      ar:c=>`  int len = (int)((sin(frame * 0.04f) + 1.0f) * 0.5f * NUM_LEDS / 3);
+  uint32_t cc = strip.Color(${c[0]},${c[1]},${c[2]});
+  strip.clear();
+  for (int i = 0; i < len; i++) {
+    strip.setPixelColor(i, cc);
+    strip.setPixelColor(NUM_LEDS - 1 - i, cc);
+  }`},
   };
+
+  function populateEffectSelect(){
+    effSel.innerHTML='';
+    const groups={};
+    Object.entries(EFFECTS).forEach(([id,e])=>{(groups[e.cat]=groups[e.cat]||[]).push([id,e])});
+    Object.entries(groups).forEach(([cat,entries])=>{
+      const og=document.createElement('optgroup');og.label=cat;
+      entries.forEach(([id,e])=>{const o=document.createElement('option');o.value=id;o.textContent=e.name;og.appendChild(o)});
+      effSel.appendChild(og);
+    });
+    effSel.value='rainbow';
+  }
+  populateEffectSelect();
 
   let frame=0;
   function resize(){
@@ -1320,7 +1861,7 @@ setInterval(updateStats,60000);
 
   function draw(){
     const N=Math.min(Math.max(+cntInp.value||1,1),1000);
-    const eff=EFFECTS[effSel.value]||EFFECTS.solid;
+    const eff=(EFFECTS[effSel.value]||EFFECTS.solid).pv;
     const col=getColor();
     const bri=(+briInp.value)/255;
     const w=cv.offsetWidth,h=200;
@@ -1363,43 +1904,9 @@ setInterval(updateStats,60000);
   }
 
   function effectCode(eff,c){
-    const cl=`strip.Color(${c[0]}, ${c[1]}, ${c[2]})`;
-    switch(eff){
-      case 'solid':return `  // solid color
-  uint32_t c = ${cl};
-  for (int i = 0; i < NUM_LEDS; i++) strip.setPixelColor(i, c);`;
-      case 'rainbow':return `  // rainbow shift
-  for (int i = 0; i < NUM_LEDS; i++) {
-    uint16_t hue = ((i * 65536L / NUM_LEDS) + frame * 256) & 0xFFFF;
-    strip.setPixelColor(i, strip.gamma32(strip.ColorHSV(hue)));
-  }`;
-      case 'comet':return `  // comet trail
-  strip.clear();
-  int head = frame % (NUM_LEDS + 25);
-  for (int i = 0; i < 22; i++) {
-    int pos = head - i;
-    if (pos >= 0 && pos < NUM_LEDS) {
-      uint8_t v = 255 - (i * 11);
-      strip.setPixelColor(pos, strip.Color(${c[0]} * v / 255, ${c[1]} * v / 255, ${c[2]} * v / 255));
-    }
-  }`;
-      case 'breathe':return `  // breathing pulse
-  float t = (sin(frame * 0.04f) + 1.0f) * 0.5f;
-  uint8_t v = (uint8_t)(t * 255);
-  for (int i = 0; i < NUM_LEDS; i++)
-    strip.setPixelColor(i, strip.Color(${c[0]} * v / 255, ${c[1]} * v / 255, ${c[2]} * v / 255));`;
-      case 'chase':return `  // theatre chase
-  int phase = (frame / 6) % 3;
-  for (int i = 0; i < NUM_LEDS; i++)
-    strip.setPixelColor(i, (i % 3 == phase) ? ${cl} : 0);`;
-      case 'sparkle':return `  // random sparkle
-  for (int i = 0; i < NUM_LEDS; i++) strip.setPixelColor(i, 0);
-  for (int s = 0; s < NUM_LEDS / 8; s++) {
-    int p = random(NUM_LEDS);
-    strip.setPixelColor(p, ${cl});
-  }`;
-    }
-    return '';
+    const e=EFFECTS[eff]||EFFECTS.solid;
+    return `  // ${e.name.toLowerCase()}
+${e.ar(c)}`;
   }
 
   function generate(){
