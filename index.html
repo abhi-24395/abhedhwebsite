@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>abhedh.in — Workshop Instruments</title>
 <meta name="description" content="A maker's instrument panel: LED power budget, NeoPixel byte order, stepper math, resistor decoder, ESP32 pinout, Hacker News, device launcher."/>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='4' fill='%23e8b958'/%3E%3C/svg%3E"/>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='4' fill='%23d4a05c'/%3E%3C/svg%3E"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;600&family=Inter:wght@300;400;500;600&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -20,11 +20,11 @@
   --text:#fafaf6;
   --text-2:#b8b1a3;
   --text-3:#6e6657;
-  --accent:#e8b958;
-  --accent-2:#f5d28d;
-  --accent-deep:#9c7a35;
-  --accent-soft:rgba(232,185,88,.10);
-  --accent-glow:rgba(232,185,88,.20);
+  --accent:#d4a05c;
+  --accent-2:#e6bd84;
+  --accent-deep:#8a6628;
+  --accent-soft:rgba(212,160,92,.10);
+  --accent-glow:rgba(212,160,92,.20);
   --success:#8fc096;
   --warn:#e8a04a;
   --error:#d97676;
@@ -56,7 +56,7 @@ body{
 .mono{font-family:var(--mono);letter-spacing:0;font-size:.85em}
 
 /* Background — paper-grain dotted texture */
-.bg-tex{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:radial-gradient(rgba(232,185,88,.05) 1px,transparent 1px);background-size:24px 24px;mask-image:radial-gradient(ellipse 80% 60% at 50% 30%,#000 30%,transparent 90%);-webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 30%,#000 30%,transparent 90%)}
+.bg-tex{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:radial-gradient(rgba(212,160,92,.05) 1px,transparent 1px);background-size:24px 24px;mask-image:radial-gradient(ellipse 80% 60% at 50% 30%,#000 30%,transparent 90%);-webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 30%,#000 30%,transparent 90%)}
 .bg-glow{position:fixed;width:80vw;height:50vw;max-width:900px;max-height:600px;border-radius:50%;background:radial-gradient(ellipse,var(--accent) 0%,transparent 60%);filter:blur(140px);opacity:.08;top:-15%;left:50%;transform:translateX(-50%);z-index:0;pointer-events:none}
 
 /* Top bar */
@@ -180,8 +180,8 @@ body{
   font-feature-settings:"tnum"
 }
 .row input:hover,.row select:hover{background:rgba(255,255,255,.025);border-bottom-color:var(--line-2)}
-.row input:focus,.row select:focus{outline:none;border-bottom-color:var(--accent);background:rgba(232,185,88,.04)}
-.row select{cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e8b958' stroke-width='2' stroke-linecap='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right .55rem center;background-size:14px;padding-right:1.85rem}
+.row input:focus,.row select:focus{outline:none;border-bottom-color:var(--accent);background:rgba(212,160,92,.04)}
+.row select{cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d4a05c' stroke-width='2' stroke-linecap='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right .55rem center;background-size:14px;padding-right:1.85rem}
 .row .input-grp{display:flex;gap:.5rem;align-items:center}
 .row input[type=color]{width:2.5rem;height:2rem;background:transparent;border:1px solid var(--line);border-radius:3px;cursor:pointer;padding:2px;flex-shrink:0}
 
@@ -250,14 +250,14 @@ button.btn.primary:hover{background:var(--accent-2);border-color:var(--accent-2)
 /* Pinout table */
 .pintable{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.82rem}
 .pintable th,.pintable td{text-align:left;padding:.55rem .65rem;border-bottom:1px solid var(--line);vertical-align:top}
-.pintable tr:hover td{background:rgba(212,165,116,.04)}
+.pintable tr:hover td{background:rgba(212,160,92,.04)}
 .pintable th{color:var(--text-3);font-weight:500;font-size:.62rem;text-transform:uppercase;letter-spacing:.12em;border-bottom:1px solid var(--line-2)}
 .pintable td:first-child{color:var(--accent-2);font-weight:500;width:8rem;white-space:nowrap}
 .badge{display:inline-block;padding:.12rem .5rem;border-radius:2px;font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--mono);font-weight:500}
 .badge.safe{background:rgba(134,184,142,.12);color:var(--success)}
 .badge.strap{background:rgba(232,160,74,.14);color:var(--warn)}
 .badge.inonly{background:rgba(217,118,118,.14);color:var(--error)}
-.badge.usb{background:rgba(212,165,116,.14);color:var(--accent)}
+.badge.usb{background:rgba(212,160,92,.14);color:var(--accent)}
 .badge.flash{background:rgba(217,118,118,.2);color:var(--error)}
 .legend{font-family:var(--mono);font-size:.66rem;color:var(--text-3);margin-top:1rem;letter-spacing:.04em;line-height:2;display:flex;flex-wrap:wrap;gap:.4rem .9rem}
 
