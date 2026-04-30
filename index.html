@@ -356,6 +356,102 @@ footer a:hover{color:var(--accent);border-bottom-color:var(--accent-soft)}
 footer .sig{font-family:var(--display);color:var(--text);font-size:1.3rem;font-weight:500;letter-spacing:-.015em}
 footer .sig em{font-family:var(--italic);font-style:italic;color:var(--accent);font-weight:400}
 
+/* Live builder */
+.builder-grid{
+  display:grid;
+  grid-template-columns:1fr 1.4fr;
+  gap:1.5rem;
+  margin-top:.5rem;
+}
+.builder-controls{display:flex;flex-direction:column;gap:.4rem}
+.builder-preview{display:flex;flex-direction:column;gap:.55rem;min-width:0}
+.builder-code{grid-column:1/-1;background:#060403;border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-top:.5rem}
+.preview-label{
+  font-family:var(--mono);
+  font-size:.7rem;
+  color:var(--text-3);
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.preview-label .effect-name{color:var(--accent);font-weight:500;text-transform:lowercase;letter-spacing:0}
+#bld-canvas{
+  width:100%;
+  height:200px;
+  background:#060403;
+  border:1px solid var(--line);
+  border-radius:6px;
+  display:block;
+  cursor:pointer;
+}
+.preview-meta{
+  font-family:var(--mono);
+  font-size:.7rem;
+  color:var(--text-3);
+  display:flex;
+  justify-content:space-between;
+}
+.builder-status{margin-top:.4rem;padding-top:.85rem;border-top:1px dashed var(--line);font-family:var(--mono)}
+.builder-status .val.warn{color:var(--warn)}
+.builder-status .val.err{color:var(--error)}
+.builder-status .val.ok{color:var(--success)}
+.bld-range{
+  flex:1;
+  -webkit-appearance:none;
+  appearance:none;
+  background:transparent;
+  height:24px;
+  cursor:pointer;
+}
+.bld-range::-webkit-slider-runnable-track{height:2px;background:var(--line);border-radius:1px}
+.bld-range::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  appearance:none;
+  height:14px;width:14px;
+  background:var(--accent);
+  border-radius:50%;
+  margin-top:-6px;
+  cursor:pointer;
+  border:none;
+}
+.bld-range::-moz-range-track{height:2px;background:var(--line);border-radius:1px}
+.bld-range::-moz-range-thumb{height:14px;width:14px;background:var(--accent);border:none;border-radius:50%;cursor:pointer}
+.bld-bri-val{font-family:var(--mono);font-size:.78rem;color:var(--accent-2);min-width:2.5rem;text-align:right;font-weight:500}
+.code-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:.65rem 1rem;
+  border-bottom:1px solid var(--line);
+  background:var(--surface-2);
+}
+.code-title{
+  font-family:var(--mono);
+  font-size:.66rem;
+  color:var(--text-3);
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.code-block{
+  margin:0;
+  padding:1.1rem 1.25rem;
+  overflow-x:auto;
+  font-family:var(--mono);
+  font-size:.78rem;
+  line-height:1.65;
+  color:var(--text-2);
+  max-height:520px;
+}
+.code-block .kw{color:var(--accent-2)}
+.code-block .typ{color:#9bbac9}
+.code-block .str{color:#8fc096}
+.code-block .num{color:#e8c59a}
+.code-block .com{color:var(--text-3);font-style:italic}
+.code-block .pp{color:#bb88c0}
+@media (max-width:900px){.builder-grid{grid-template-columns:1fr}}
+
 @media (max-width:1024px){
   .card.col-7,.card.col-5,.card.col-8,.card.col-4{grid-column:span 6}
 }
@@ -645,6 +741,81 @@ footer .sig em{font-family:var(--italic);font-style:italic;color:var(--accent);f
       </div>
     </article>
 
+  </div>
+
+  <div class="sect">
+    <span class="sect-name">Build &amp; simulate</span>
+    <span class="sect-line"></span>
+    <span class="sect-meta">01</span>
+  </div>
+
+  <div class="grid">
+    <article class="card col-12">
+      <div class="card-head">
+        <span class="card-num">08</span>
+        <div class="card-title">
+          <div class="t">Live builder</div>
+          <div class="sub">Pick a board, count and effect — watch the live preview, copy the working Arduino sketch</div>
+        </div>
+      </div>
+
+      <div class="builder-grid">
+        <div class="builder-controls">
+          <div class="row"><label>Board</label><select id="bld-board"></select></div>
+          <div class="row"><label>Data pin</label><select id="bld-pin"></select></div>
+          <div class="row"><label>LED count</label><input type="number" id="bld-count" value="60" min="1" max="1000"/></div>
+          <div class="row"><label>Strip type</label>
+            <select id="bld-type">
+              <option value="GRB" selected>WS2812B (GRB)</option>
+              <option value="RGB">WS2811 (RGB)</option>
+              <option value="GRBW">SK6812 RGBW</option>
+            </select>
+          </div>
+          <div class="row"><label>Effect</label>
+            <select id="bld-effect">
+              <option value="solid">Solid color</option>
+              <option value="rainbow" selected>Rainbow</option>
+              <option value="comet">Comet</option>
+              <option value="breathe">Breathe</option>
+              <option value="chase">Theatre chase</option>
+              <option value="sparkle">Sparkle</option>
+            </select>
+          </div>
+          <div class="row"><label>Color</label><div class="input-grp"><input type="color" id="bld-color" value="#d4a05c"/><input type="text" id="bld-color-hex" value="#d4a05c"/></div></div>
+          <div class="row"><label>Brightness</label>
+            <div class="input-grp" style="flex:1;display:flex;align-items:center;gap:.7rem">
+              <input type="range" id="bld-bri" min="0" max="255" value="180" class="bld-range"/>
+              <span class="bld-bri-val" id="bld-bri-val">180</span>
+            </div>
+          </div>
+          <div class="builder-status">
+            <div class="out-row"><span class="lbl">Peak draw</span><span class="val" id="bld-peak">—</span></div>
+            <div class="out-row"><span class="lbl">PSU recommend</span><span class="val" id="bld-psu">—</span></div>
+            <div class="out-row"><span class="lbl">Pin status</span><span class="val ok" id="bld-pin-warn">—</span></div>
+          </div>
+        </div>
+
+        <div class="builder-preview">
+          <div class="preview-label">
+            <span>Live simulation</span>
+            <span class="effect-name" id="bld-effect-name">rainbow</span>
+          </div>
+          <canvas id="bld-canvas"></canvas>
+          <div class="preview-meta">
+            <span>click canvas to cycle effect</span>
+            <span id="bld-count-disp">60 LEDs</span>
+          </div>
+        </div>
+
+        <div class="builder-code">
+          <div class="code-head">
+            <span class="code-title">generated arduino sketch · ready to flash</span>
+            <button class="btn" id="bld-copy">Copy</button>
+          </div>
+          <pre class="code-block"><code id="bld-code"></code></pre>
+        </div>
+      </div>
+    </article>
   </div>
 
   <footer>
@@ -1080,6 +1251,246 @@ function updateStats(){
 renderDevs();
 updateStats();
 setInterval(updateStats,60000);
+
+// Live builder — pick a board / count / effect, get a live preview + Arduino sketch
+(function(){
+  function range(from,to){return Array.from({length:to-from+1},(_,i)=>from+i)}
+  const BOARDS={
+    esp32:{name:'ESP32 DevKit V1',safe:[4,5,13,14,16,17,18,19,21,22,23,25,26,27,32,33],strap:[0,2,12,15],defaultPin:4,arduino:'ESP32 Dev Module'},
+    c3:{name:'ESP32-C3 Super Mini',safe:[0,1,3,4,5,6,7,10,20,21],strap:[2,8,9],defaultPin:4,arduino:'ESP32C3 Dev Module'},
+    s3:{name:'ESP32-S3 DevKit',safe:[...range(4,21),...range(38,48)],strap:[0,45,46],defaultPin:4,arduino:'ESP32S3 Dev Module'},
+    uno:{name:'Arduino Uno / Pro Mini',safe:[...range(2,12)],strap:[],defaultPin:6,arduino:'Arduino Uno'},
+  };
+  const $=id=>document.getElementById(id);
+  const boardSel=$('bld-board');if(!boardSel)return;
+  const pinSel=$('bld-pin'),cntInp=$('bld-count'),typeSel=$('bld-type'),effSel=$('bld-effect');
+  const colorPick=$('bld-color'),colorHex=$('bld-color-hex'),briInp=$('bld-bri'),briVal=$('bld-bri-val');
+  const cv=$('bld-canvas'),ctx=cv.getContext('2d');
+
+  Object.entries(BOARDS).forEach(([k,v])=>{
+    const o=document.createElement('option');o.value=k;o.textContent=v.name;boardSel.appendChild(o);
+  });
+  function refreshPins(){
+    const b=BOARDS[boardSel.value];pinSel.innerHTML='';
+    b.safe.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent='GPIO '+p;o.dataset.kind='safe';pinSel.appendChild(o)});
+    b.strap.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent='GPIO '+p+' (strapping)';o.dataset.kind='strap';pinSel.appendChild(o)});
+    pinSel.value=b.defaultPin;
+  }
+  refreshPins();
+
+  function bhsv(h,s,v){
+    const c=v*s,x=c*(1-Math.abs(((h/60)%2)-1)),m=v-c;
+    let r=0,g=0,b=0;
+    if(h<60){r=c;g=x}else if(h<120){r=x;g=c}else if(h<180){g=c;b=x}
+    else if(h<240){g=x;b=c}else if(h<300){r=x;b=c}else{r=c;b=x}
+    return [(r+m)*255|0,(g+m)*255|0,(b+m)*255|0];
+  }
+  function getColor(){
+    const m=colorHex.value.trim().match(/^#?([0-9a-f]{6})$/i);
+    if(!m)return [212,160,92];
+    return [parseInt(m[1].slice(0,2),16),parseInt(m[1].slice(2,4),16),parseInt(m[1].slice(4,6),16)];
+  }
+  const EFFECTS={
+    solid:(i,f,N,c)=>c,
+    rainbow:(i,f,N,c)=>bhsv((i*360/Math.max(N,1)+f*1.4)%360,.85,.92),
+    comet:(i,f,N,c)=>{
+      const head=(f*0.55)%(N+25),d=head-i;
+      if(d<0||d>22)return [4,3,1];
+      const v=Math.pow(1-d/22,1.6);
+      return [c[0]*v|0,c[1]*v|0,c[2]*v|0];
+    },
+    breathe:(i,f,N,c)=>{
+      const v=Math.pow((Math.sin(f*0.04)+1)/2,1.5);
+      return [c[0]*v|0,c[1]*v|0,c[2]*v|0];
+    },
+    chase:(i,f,N,c)=>(i%3===Math.floor(f*0.18)%3)?c:[4,3,1],
+    sparkle:(i,f,N,c)=>{
+      const seed=(Math.sin((i*97+f*3.7)*0.43)+1)/2;
+      return seed>0.96?[Math.min(c[0]+30,255),Math.min(c[1]+30,255),Math.min(c[2]+30,255)]:[4,3,1];
+    },
+  };
+
+  let frame=0;
+  function resize(){
+    const dpr=window.devicePixelRatio||1;
+    cv.width=cv.offsetWidth*dpr;cv.height=200*dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  resize();window.addEventListener('resize',resize);
+
+  function draw(){
+    const N=Math.min(Math.max(+cntInp.value||1,1),1000);
+    const eff=EFFECTS[effSel.value]||EFFECTS.solid;
+    const col=getColor();
+    const bri=(+briInp.value)/255;
+    const w=cv.offsetWidth,h=200;
+    ctx.clearRect(0,0,w,h);
+    const maxPerRow=Math.max(Math.floor(w/5),20);
+    const rows=Math.ceil(N/maxPerRow);
+    const perRow=Math.ceil(N/rows);
+    const rowH=(h-12)/rows;
+    const stride=w/perRow;
+    const r=Math.min(stride*0.32,rowH*0.32,5);
+    ctx.shadowBlur=N>200?4:9;
+    for(let i=0;i<N;i++){
+      const [R,G,B]=eff(i,frame,N,col);
+      const ci=`rgb(${(R*bri)|0},${(G*bri)|0},${(B*bri)|0})`;
+      ctx.fillStyle=ci;ctx.shadowColor=ci;
+      const row=Math.floor(i/perRow),idx=i-row*perRow;
+      const x=stride*(idx+0.5),y=6+rowH*(row+0.5);
+      ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+    }
+    ctx.shadowBlur=0;
+    frame++;
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+  function updateStatus(){
+    const N=+cntInp.value||0;
+    const bri=+briInp.value;
+    const peak=N*0.06*(bri/255);
+    const psu=Math.ceil(peak*1.25*2)/2;
+    $('bld-peak').textContent=peak.toFixed(2)+' A @ 5V ('+(peak*5).toFixed(1)+' W)';
+    $('bld-psu').textContent='≥ '+psu.toFixed(1)+' A 5V';
+    const opt=pinSel.options[pinSel.selectedIndex];
+    const kind=opt?opt.dataset.kind:'safe';
+    const w=$('bld-pin-warn');
+    if(kind==='strap'){w.textContent='strapping pin — check boot state';w.className='val warn'}
+    else{w.textContent='ok';w.className='val ok'}
+    $('bld-count-disp').textContent=N+' LED'+(N===1?'':'s');
+    $('bld-effect-name').textContent=effSel.value;
+  }
+
+  function effectCode(eff,c){
+    const cl=`strip.Color(${c[0]}, ${c[1]}, ${c[2]})`;
+    switch(eff){
+      case 'solid':return `  // solid color
+  uint32_t c = ${cl};
+  for (int i = 0; i < NUM_LEDS; i++) strip.setPixelColor(i, c);`;
+      case 'rainbow':return `  // rainbow shift
+  for (int i = 0; i < NUM_LEDS; i++) {
+    uint16_t hue = ((i * 65536L / NUM_LEDS) + frame * 256) & 0xFFFF;
+    strip.setPixelColor(i, strip.gamma32(strip.ColorHSV(hue)));
+  }`;
+      case 'comet':return `  // comet trail
+  strip.clear();
+  int head = frame % (NUM_LEDS + 25);
+  for (int i = 0; i < 22; i++) {
+    int pos = head - i;
+    if (pos >= 0 && pos < NUM_LEDS) {
+      uint8_t v = 255 - (i * 11);
+      strip.setPixelColor(pos, strip.Color(${c[0]} * v / 255, ${c[1]} * v / 255, ${c[2]} * v / 255));
+    }
+  }`;
+      case 'breathe':return `  // breathing pulse
+  float t = (sin(frame * 0.04f) + 1.0f) * 0.5f;
+  uint8_t v = (uint8_t)(t * 255);
+  for (int i = 0; i < NUM_LEDS; i++)
+    strip.setPixelColor(i, strip.Color(${c[0]} * v / 255, ${c[1]} * v / 255, ${c[2]} * v / 255));`;
+      case 'chase':return `  // theatre chase
+  int phase = (frame / 6) % 3;
+  for (int i = 0; i < NUM_LEDS; i++)
+    strip.setPixelColor(i, (i % 3 == phase) ? ${cl} : 0);`;
+      case 'sparkle':return `  // random sparkle
+  for (int i = 0; i < NUM_LEDS; i++) strip.setPixelColor(i, 0);
+  for (int s = 0; s < NUM_LEDS / 8; s++) {
+    int p = random(NUM_LEDS);
+    strip.setPixelColor(p, ${cl});
+  }`;
+    }
+    return '';
+  }
+
+  function generate(){
+    const board=BOARDS[boardSel.value];
+    const pin=+pinSel.value;
+    const N=+cntInp.value||0;
+    const type=typeSel.value;
+    const effect=effSel.value;
+    const col=getColor();
+    const bri=+briInp.value;
+    const colorOrder=type==='GRBW'?'NEO_GRBW':type==='RGB'?'NEO_RGB':'NEO_GRB';
+    const stripName=type==='GRBW'?'SK6812 RGBW':type==='RGB'?'WS2811':'WS2812B';
+    const kind=pinSel.options[pinSel.selectedIndex].dataset.kind;
+    const psu=(Math.ceil(N*0.06*bri/255*1.25*2)/2).toFixed(1);
+    const peak=(N*0.06*bri/255).toFixed(2);
+    return `// abhedh.in/workshop · generated sketch
+// Board:  ${board.name}     (Arduino IDE: select "${board.arduino}")
+// LEDs:   ${N} × ${stripName} (${type})
+// Data:   GPIO ${pin}${kind==='strap'?'   <-- strapping pin: verify boot state':''}
+// Effect: ${effect}, brightness ${bri}/255
+//
+// Power:  ~${peak} A peak @ 5V — use a ${psu} A or larger 5V supply.
+
+#include <Adafruit_NeoPixel.h>
+
+#define LED_PIN  ${pin}
+#define NUM_LEDS ${N}
+#define BRIGHT   ${bri}
+
+Adafruit_NeoPixel strip(NUM_LEDS, LED_PIN, ${colorOrder} + NEO_KHZ800);
+
+unsigned long lastTick = 0;
+uint32_t frame = 0;
+
+void setup() {
+  Serial.begin(115200);
+  strip.begin();
+  strip.setBrightness(BRIGHT);
+  strip.show();
+}
+
+void loop() {
+  if (millis() - lastTick < 30) return;
+  lastTick = millis();
+
+${effectCode(effect,col)}
+
+  strip.show();
+  frame++;
+}
+`;
+  }
+
+  function highlight(code){
+    return code
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/(\/\/[^\n]*)/g,'<span class="com">$1</span>')
+      .replace(/(#\w+)/g,'<span class="pp">$1</span>')
+      .replace(/\b(void|int|uint8_t|uint16_t|uint32_t|float|unsigned|long|if|else|for|return)\b/g,'<span class="kw">$1</span>')
+      .replace(/\b(Adafruit_NeoPixel|Serial|millis|sin|random|strip|NEO_GRB|NEO_RGB|NEO_GRBW|NEO_KHZ800|setup|loop)\b/g,'<span class="typ">$1</span>')
+      .replace(/\b(\d+\.?\d*[fL]?)\b/g,'<span class="num">$1</span>')
+      .replace(/("[^"]*")/g,'<span class="str">$1</span>');
+  }
+  function update(){updateStatus();$('bld-code').innerHTML=highlight(generate())}
+
+  [pinSel,cntInp,typeSel,effSel,colorHex,briInp].forEach(el=>el.addEventListener('input',update));
+  [pinSel,typeSel,effSel].forEach(el=>el.addEventListener('change',update));
+  boardSel.addEventListener('change',()=>{refreshPins();update()});
+  colorPick.addEventListener('input',e=>{colorHex.value=e.target.value;update()});
+  colorHex.addEventListener('input',e=>{
+    if(/^#?[0-9a-f]{6}$/i.test(e.target.value)){
+      colorPick.value=e.target.value.startsWith('#')?e.target.value:'#'+e.target.value;
+    }
+    update();
+  });
+  briInp.addEventListener('input',()=>{briVal.textContent=briInp.value;update()});
+  cv.addEventListener('click',()=>{
+    const opts=Array.from(effSel.options);
+    const idx=opts.findIndex(o=>o.value===effSel.value);
+    effSel.value=opts[(idx+1)%opts.length].value;
+    update();
+  });
+  $('bld-copy').addEventListener('click',()=>{
+    const code=generate();const btn=$('bld-copy');
+    navigator.clipboard.writeText(code).then(()=>{
+      const orig=btn.textContent;btn.textContent='Copied ✓';
+      setTimeout(()=>btn.textContent=orig,1800);
+    }).catch(()=>{btn.textContent='Copy failed';setTimeout(()=>btn.textContent='Copy',1800)});
+  });
+  update();
+})();
 
 // Collapse / expand per card (state persists in localStorage)
 (function(){
