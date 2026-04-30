@@ -5,27 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>abhedh.in — Workshop Instruments</title>
 <meta name="description" content="A maker's instrument panel: LED power budget, NeoPixel byte order, stepper math, resistor decoder, ESP32 pinout, Hacker News, device launcher."/>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='4' fill='%23d4a574'/%3E%3C/svg%3E"/>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='4' fill='%23e8b958'/%3E%3C/svg%3E"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
 :root{
-  --bg:#0d0c0a;
+  --bg:#0a0907;
   --bg-2:#100e0c;
   --surface:#15130f;
-  --surface-2:#1a1813;
-  --line:#2a2620;
-  --line-2:#3d3830;
-  --text:#f5f1e8;
-  --text-2:#a09a8c;
-  --text-3:#605c52;
-  --accent:#d4a574;
-  --accent-2:#e8c39a;
-  --accent-deep:#a37c4f;
-  --accent-soft:rgba(212,165,116,.10);
-  --accent-glow:rgba(212,165,116,.18);
-  --success:#86b88e;
+  --surface-2:#1d1916;
+  --line:#2c2620;
+  --line-2:#403930;
+  --text:#fafaf6;
+  --text-2:#b8b1a3;
+  --text-3:#6e6657;
+  --accent:#e8b958;
+  --accent-2:#f5d28d;
+  --accent-deep:#9c7a35;
+  --accent-soft:rgba(232,185,88,.10);
+  --accent-glow:rgba(232,185,88,.20);
+  --success:#8fc096;
   --warn:#e8a04a;
   --error:#d97676;
   --font:'Inter',system-ui,sans-serif;
@@ -53,8 +53,8 @@ body{
 .serif{font-family:var(--display);font-style:italic;font-weight:400}
 .mono{font-family:var(--mono);letter-spacing:0;font-size:.85em}
 
-/* Background — paper-grain dotted texture, not blueprint */
-.bg-tex{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:radial-gradient(rgba(212,165,116,.05) 1px,transparent 1px);background-size:24px 24px;mask-image:radial-gradient(ellipse 80% 60% at 50% 30%,#000 30%,transparent 90%);-webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 30%,#000 30%,transparent 90%)}
+/* Background — paper-grain dotted texture */
+.bg-tex{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:radial-gradient(rgba(232,185,88,.05) 1px,transparent 1px);background-size:24px 24px;mask-image:radial-gradient(ellipse 80% 60% at 50% 30%,#000 30%,transparent 90%);-webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 30%,#000 30%,transparent 90%)}
 .bg-glow{position:fixed;width:80vw;height:50vw;max-width:900px;max-height:600px;border-radius:50%;background:radial-gradient(ellipse,var(--accent) 0%,transparent 60%);filter:blur(140px);opacity:.08;top:-15%;left:50%;transform:translateX(-50%);z-index:0;pointer-events:none}
 
 /* Top bar */
@@ -75,21 +75,21 @@ body{
 
 /* Hero — editorial */
 .hero{margin-bottom:5rem;max-width:880px}
-.hero .kicker{font-family:var(--mono);font-size:.7rem;color:var(--accent);letter-spacing:.25em;text-transform:uppercase;margin-bottom:1.5rem;display:flex;align-items:center;gap:.6rem}
-.hero .kicker::before{content:'';width:24px;height:1px;background:var(--accent)}
-.hero h1{font-family:var(--display);font-weight:400;font-size:clamp(3.5rem,9vw,7rem);line-height:.95;color:var(--text);margin-bottom:1.5rem;letter-spacing:-.01em}
-.hero h1 em{font-style:italic;color:var(--accent)}
-.hero .lede{font-size:1.1rem;line-height:1.55;color:var(--text-2);max-width:56ch;font-weight:300}
+.hero .kicker{font-family:var(--mono);font-size:.68rem;color:var(--accent);letter-spacing:.28em;text-transform:uppercase;margin-bottom:1.75rem;display:flex;align-items:center;gap:.7rem;font-weight:500}
+.hero .kicker::before{content:'';width:28px;height:1px;background:var(--accent)}
+.hero h1{font-family:var(--font);font-weight:300;font-size:clamp(3rem,8vw,6rem);line-height:1;color:var(--text);margin-bottom:1.5rem;letter-spacing:-.02em}
+.hero h1 em{font-family:var(--display);font-style:italic;color:var(--accent);font-weight:400;letter-spacing:0}
+.hero .lede{font-size:1.05rem;line-height:1.7;color:var(--text-2);max-width:62ch;font-weight:400}
 .hero .lede strong{color:var(--text);font-weight:500}
 
 /* Stats strip */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0;margin-top:3rem;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.stat{padding:1.25rem var(--gut);border-right:1px solid var(--line);font-family:var(--mono)}
+.stat{padding:1.5rem var(--gut);border-right:1px solid var(--line)}
 .stat:last-child{border-right:none}
-.stat .lbl{font-size:.62rem;color:var(--text-3);letter-spacing:.18em;text-transform:uppercase;margin-bottom:.4rem}
-.stat .val{font-size:1.4rem;color:var(--text);font-weight:500;line-height:1}
-.stat .val em{font-family:var(--display);font-style:italic;color:var(--accent);font-weight:400}
-.stat .sub{font-size:.7rem;color:var(--text-3);margin-top:.3rem;letter-spacing:.04em}
+.stat .lbl{font-family:var(--mono);font-size:.62rem;color:var(--text-3);letter-spacing:.2em;text-transform:uppercase;margin-bottom:.65rem;font-weight:500}
+.stat .val{font-family:var(--font);font-size:1.75rem;color:var(--text);font-weight:600;line-height:1;letter-spacing:-.02em;font-feature-settings:"tnum"}
+.stat .val em{font-family:var(--display);font-style:italic;color:var(--accent);font-weight:400;font-size:1.15em;letter-spacing:0}
+.stat .sub{font-family:var(--mono);font-size:.68rem;color:var(--text-3);margin-top:.5rem;letter-spacing:.05em}
 
 /* Section divider */
 .sect{display:flex;align-items:baseline;margin:5rem 0 2rem;gap:1.25rem}
@@ -125,8 +125,8 @@ body{
 .card-num::before{content:'[ '}
 .card-num::after{content:' ]'}
 .card-title{flex:1;min-width:0}
-.card-title .t{font-family:var(--display);font-style:italic;font-size:1.35rem;color:var(--text);font-weight:400;line-height:1.1;margin-bottom:.2rem}
-.card-title .sub{font-family:var(--mono);font-size:.66rem;color:var(--text-3);letter-spacing:.1em;text-transform:uppercase}
+.card-title .t{font-family:var(--font);font-size:1.05rem;color:var(--text);font-weight:500;line-height:1.25;margin-bottom:.3rem;letter-spacing:-.005em}
+.card-title .sub{font-family:var(--mono);font-size:.64rem;color:var(--text-3);letter-spacing:.12em;text-transform:uppercase;font-weight:500}
 .card-action{margin-left:auto}
 
 /* Collapse toggle */
@@ -165,19 +165,21 @@ body{
 .row:hover{border-bottom-color:var(--line)}
 .row label{font-size:.7rem;color:var(--text-3);letter-spacing:.06em;text-transform:uppercase;font-family:var(--mono);font-weight:500}
 .row input[type=number],.row input[type=text],.row select{
-  background:transparent;
+  background:rgba(255,255,255,.015);
   border:none;
   border-bottom:1px solid var(--line);
   color:var(--text);
   font-family:var(--mono);
-  font-size:.92rem;
-  padding:.4rem 0;
-  border-radius:0;
+  font-size:.9rem;
+  padding:.45rem .55rem;
+  border-radius:2px 2px 0 0;
   width:100%;
-  transition:border-color .2s;
+  transition:all .2s;
+  font-feature-settings:"tnum"
 }
-.row input:focus,.row select:focus{outline:none;border-bottom-color:var(--accent)}
-.row select{cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d4a574' stroke-width='2' stroke-linecap='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right .4rem center;background-size:14px;padding-right:1.5rem}
+.row input:hover,.row select:hover{background:rgba(255,255,255,.025);border-bottom-color:var(--line-2)}
+.row input:focus,.row select:focus{outline:none;border-bottom-color:var(--accent);background:rgba(232,185,88,.04)}
+.row select{cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e8b958' stroke-width='2' stroke-linecap='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right .55rem center;background-size:14px;padding-right:1.85rem}
 .row .input-grp{display:flex;gap:.5rem;align-items:center}
 .row input[type=color]{width:2.5rem;height:2rem;background:transparent;border:1px solid var(--line);border-radius:3px;cursor:pointer;padding:2px;flex-shrink:0}
 
@@ -288,7 +290,7 @@ button.btn.primary:hover{background:var(--accent-2);border-color:var(--accent-2)
 .dev:hover{padding-left:.4rem}
 .dev:last-child{border-bottom:none}
 .dev .info{flex:1;min-width:0}
-.dev .name{color:var(--text);font-weight:500;font-size:.95rem;line-height:1.3;font-family:var(--display);font-style:italic}
+.dev .name{color:var(--text);font-weight:500;font-size:.92rem;line-height:1.3;letter-spacing:-.005em;margin-bottom:.15rem}
 .dev .url{color:var(--text-3);font-family:var(--mono);font-size:.72rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.02em}
 .dev a.open{font-family:var(--mono);font-size:.66rem;color:var(--accent);padding:.45rem .8rem;border:1px solid var(--accent-soft);border-radius:2px;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;transition:all .2s;flex-shrink:0}
 .dev a.open:hover{background:var(--accent);color:var(--bg);border-color:var(--accent)}
@@ -348,9 +350,9 @@ footer .sig em{color:var(--accent)}
 <main class="wrap">
 
   <section class="hero">
-    <div class="kicker">workshop instruments &middot; v1</div>
-    <h1>The <em>indivisible</em><br/>tool drawer.</h1>
-    <p class="lede">A maker's instrument panel. Calculators for <strong>LED power</strong>, <strong>steppers</strong>, and <strong>resistors</strong>. References for <strong>NeoPixel byte order</strong> and <strong>ESP32 pinout</strong>. A live <strong>news feed</strong> and a quick-launcher for the devices on your bench. One static page, no backend, runs offline once loaded.</p>
+    <div class="kicker">workshop &middot; abhedh.in</div>
+    <h1>A maker's <em>bench</em>,<br/>in the browser.</h1>
+    <p class="lede">Calculators for LED power, steppers and resistors. References for NeoPixel byte order and the ESP32 family pinout. A live news feed and a quick-launcher for the devices in front of you. <strong>One static page. No backend. Runs offline.</strong></p>
 
     <div class="stats">
       <div class="stat">
