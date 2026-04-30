@@ -191,6 +191,23 @@ button.btn.primary{background:var(--accent-soft);border-color:var(--accent);colo
 .add-dev input{flex:1;min-width:9rem;background:var(--bg);border:1px solid var(--line);color:var(--text);font-family:var(--mono);font-size:.84rem;padding:.55rem .7rem;border-radius:5px}
 .add-dev input:focus{outline:none;border-color:var(--accent)}
 
+.news{display:flex;flex-direction:column;gap:.45rem}
+.news-item{display:flex;gap:.85rem;padding:.7rem .85rem;background:var(--bg);border:1px solid var(--line);border-radius:6px;transition:border-color .2s;align-items:flex-start}
+.news-item:hover{border-color:var(--line-2)}
+.news-item .rank{font-family:var(--mono);color:var(--text-3);font-size:.78rem;flex-shrink:0;width:1.7rem;text-align:right;padding-top:.1rem;letter-spacing:.04em}
+.news-item .body{flex:1;min-width:0}
+.news-item .title{display:block;color:var(--text);font-size:.92rem;line-height:1.4;margin-bottom:.25rem;text-decoration:none;font-weight:500}
+.news-item .title:hover{color:var(--accent)}
+.news-item .nmeta{font-family:var(--mono);font-size:.7rem;color:var(--text-3);letter-spacing:.03em;display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+.news-item .nmeta a{color:var(--text-3);text-decoration:none}
+.news-item .nmeta a:hover{color:var(--accent)}
+.news-item .nmeta .sep{color:var(--line-2)}
+.news-item .nmeta .host{color:var(--text-2)}
+.news-loading,.news-error{padding:1rem;text-align:center;color:var(--text-3);font-family:var(--mono);font-size:.8rem}
+.news-error{color:var(--error)}
+.news-refresh{margin-left:auto;background:transparent;border:none;color:var(--text-3);cursor:pointer;font-family:var(--mono);font-size:.7rem;letter-spacing:.05em;padding:.3rem .5rem;border-radius:4px;transition:color .2s}
+.news-refresh:hover{color:var(--accent)}
+
 footer{margin-top:5rem;padding-top:2rem;border-top:1px solid var(--line);font-family:var(--mono);font-size:.7rem;color:var(--text-3);text-align:center;letter-spacing:.1em;text-transform:uppercase}
 footer a{color:var(--text-2);text-decoration:none;border-bottom:1px solid transparent;transition:all .2s}
 footer a:hover{color:var(--accent);border-bottom-color:var(--accent)}
@@ -314,7 +331,18 @@ footer a:hover{color:var(--accent);border-bottom-color:var(--accent)}
     </article>
 
     <article class="card wide">
-      <h2><span class="num">06</span> Workshop launcher <span class="meta">stored locally in this browser</span></h2>
+      <h2><span class="num">06</span> News <span class="meta">hacker news · cached 15 min</span><button class="news-refresh" id="news-refresh" title="Force refresh">↻ refresh</button></h2>
+      <div class="tabs" id="news-tabs">
+        <button class="tab active" data-feed="topstories">Top</button>
+        <button class="tab" data-feed="newstories">New</button>
+        <button class="tab" data-feed="askstories">Ask HN</button>
+        <button class="tab" data-feed="showstories">Show HN</button>
+      </div>
+      <div class="news" id="news-list"><div class="news-loading">Loading…</div></div>
+    </article>
+
+    <article class="card wide">
+      <h2><span class="num">07</span> Workshop launcher <span class="meta">stored locally in this browser</span></h2>
       <div class="devices" id="devices"></div>
       <div class="add-dev">
         <input type="text" id="dev-name" placeholder="Name (e.g. Triblock master)"/>
@@ -575,6 +603,83 @@ if(localStorage.getItem(DEV_KEY)===null){
   ]);
 }
 renderDevs();
+
+// News (Hacker News)
+const NEWS_KEY='abhedh.news.v1';
+const NEWS_TTL=15*60*1000;
+const NEWS_LIMIT=12;
+let currentFeed='topstories';
+
+function timeAgo(ts){
+  const s=Math.floor(Date.now()/1000-ts);
+  if(s<60)return s+'s';
+  if(s<3600)return Math.floor(s/60)+'m';
+  if(s<86400)return Math.floor(s/3600)+'h';
+  return Math.floor(s/86400)+'d';
+}
+
+async function fetchNews(feed,force){
+  const cacheKey=NEWS_KEY+'.'+feed;
+  if(!force){
+    const cached=JSON.parse(localStorage.getItem(cacheKey)||'null');
+    if(cached&&Date.now()-cached.t<NEWS_TTL)return cached.items;
+  }
+  const ids=await fetch('https://hacker-news.firebaseio.com/v0/'+feed+'.json').then(r=>r.json());
+  const items=await Promise.all(ids.slice(0,NEWS_LIMIT).map(id=>
+    fetch('https://hacker-news.firebaseio.com/v0/item/'+id+'.json').then(r=>r.json())
+  ));
+  localStorage.setItem(cacheKey,JSON.stringify({t:Date.now(),items}));
+  return items;
+}
+
+function renderNews(items){
+  const list=document.getElementById('news-list');
+  if(!items||items.length===0){
+    list.innerHTML='<div class="news-loading">No stories.</div>';
+    return;
+  }
+  list.innerHTML=items.filter(Boolean).map((it,i)=>{
+    const url=it.url||('https://news.ycombinator.com/item?id='+it.id);
+    let host='news.ycombinator.com';
+    if(it.url){try{host=new URL(it.url).hostname.replace(/^www\./,'')}catch{}}
+    return `<div class="news-item">
+      <div class="rank">${(i+1).toString().padStart(2,'0')}</div>
+      <div class="body">
+        <a class="title" href="${escHtml(url)}" target="_blank" rel="noopener">${escHtml(it.title||'(untitled)')}</a>
+        <div class="nmeta">
+          <span><strong>${it.score||0}</strong> pts</span>
+          <span class="sep">·</span>
+          <span class="host">${escHtml(host)}</span>
+          <span class="sep">·</span>
+          <span>${timeAgo(it.time||0)}</span>
+          <span class="sep">·</span>
+          <span>${escHtml(it.by||'?')}</span>
+          <span class="sep">·</span>
+          <a href="https://news.ycombinator.com/item?id=${it.id}" target="_blank" rel="noopener">${it.descendants||0} comments</a>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function loadNews(feed,force){
+  currentFeed=feed;
+  const list=document.getElementById('news-list');
+  list.innerHTML='<div class="news-loading">Loading…</div>';
+  try{
+    renderNews(await fetchNews(feed,force));
+  }catch(e){
+    list.innerHTML='<div class="news-error">Failed to load news. Check your connection.</div>';
+  }
+}
+
+document.querySelectorAll('#news-tabs .tab').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#news-tabs .tab').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  loadNews(b.dataset.feed,false);
+}));
+document.getElementById('news-refresh').addEventListener('click',()=>loadNews(currentFeed,true));
+loadNews('topstories',false);
 </script>
 </body>
 </html>
